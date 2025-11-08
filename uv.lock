@@ -995,8 +995,8 @@ provides-extras = ["dev"]
 
 [[package]]
 name = "mcp-weather"
-version = "0.1.0"
-source = { git = "https://github.com/geosp/mcp-weather.git#96c6ca096fa9c0d0c2fd5be40825dec4fc1f970f" }
+version = "0.2.0"
+source = { git = "https://github.com/geosp/mcp-weather.git#cdcae1b61322710f27488d2a50a7d1dd4bb76f19" }
 dependencies = [
     { name = "aiocache" },
     { name = "aiohttp" },
