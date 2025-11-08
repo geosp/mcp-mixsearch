@@ -1,0 +1,15 @@
+name: MCP MixSearch Server
+version: 0.0.1
+schema: v1
+mcpServers:
+  - name: MCP MixSearch Server
+    command: uv
+    args:
+      - run
+      - python
+      - server.py
+      - --mode
+      - stdio
+    env:
+      MCP_TRANSPORT: "stdio"
+      MCP_ONLY: "true"

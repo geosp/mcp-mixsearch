@@ -1,0 +1,10 @@
+name: MCP Weather
+version: 0.0.1
+mcpServers:
+  - name: MCP Weather
+    command: uv
+    args:
+      - run
+      - mcp-bridge
+      - --config
+      - weather.json

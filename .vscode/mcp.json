@@ -1,0 +1,23 @@
+{
+	"servers": {
+		// MCP_TRANSPORT=http MCP_ONLY=true uv run mcp-weather
+		"search-mcp-http": {
+			"type": "http",
+			"url": "http://localhost:3000/mcp",
+			"headers": {
+				"Authorization": "Bearer iaOPJQ29pv9gVVepAA89ZCLvM7eDbc4dbPGRxLl6dtLCFxNRNgU5Ygr0hMlP"
+			}
+		},
+		// "weather-specbridge": {
+		// 	"type": "stdio",
+		// 	"command": "/home/geo/.nvm/versions/node/v24.9.0/bin/node",
+		// 	"args": ["/home/geo/.nvm/versions/node/v24.9.0/bin/specbridge", "--specs", "/home/geo/projects/mcp/mcp-weather/specs"]
+		// },
+		// "weather-direct": {
+		// 	"type": "stdio",
+		// 	"command": "/home/geo/projects/mcp/mcp-weather/.venv/bin/python",
+		// 	"args": ["-m", "mcp_weather.server"]
+		// },
+	},
+	"inputs": []
+}
