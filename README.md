@@ -29,10 +29,6 @@ uv run mcp-mixsearch --mode mcp
 uv run mcp-mixsearch --mode rest
 ```
 
-### Use as a Dependency
-
-See [Using as Dependency](USING_AS_DEPENDENCY.md) for creating your own MCP servers.
-
 ## Configuration
 
 Set environment variables in a `.env` file or export them:
