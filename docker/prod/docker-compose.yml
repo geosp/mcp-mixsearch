@@ -1,0 +1,9 @@
+services:
+  mcp-mixsearch:
+    image: ghcr.io/geosp/mcp-mixsearch:main
+    ports:
+      - "3000:3000"
+    environment:
+      - MCP_ONLY=true
+    command: ["mcp-mixsearch@git+https://github.com/geosp/mcp-mixsearch.git", "--mode", "mcp"]
+    restart: unless-stopped

@@ -69,12 +69,33 @@ class MixSearchServer(BaseMCPServer):
     
     def create_router(self):
         """Create REST API router"""
-        from features.web_search.routes import create_router
-        return create_router(self.service.web_search_service)
+        from fastapi import APIRouter
+        from features.web_search.routes import create_router as create_search_router
+        
+        # Create main router
+        router = APIRouter()
+        
+        # Add health endpoint
+        @router.get("/health")
+        async def health():
+            """Health check endpoint"""
+            return {
+                "status": "healthy",
+                "service": "mixsearch", 
+                "version": self.service_version
+            }
+        
+        # Include search routes
+        search_router = create_search_router(self.service.web_search_service)
+        router.include_router(search_router)
+        
+        return router
     
     def create_auth_provider(self):
         """Create authentication provider"""
         return None
+
+
     
     def register_exception_handlers(self, app):
         """Register custom exception handlers and middleware"""
