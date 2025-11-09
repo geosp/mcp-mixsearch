@@ -3,6 +3,7 @@ services:
     build:
       context: ../..
       dockerfile: Dockerfile
+    container_name: mcp-mixsearch
     volumes:
       - ../..:/app
     working_dir: /app

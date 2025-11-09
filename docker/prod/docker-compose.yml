@@ -1,6 +1,7 @@
 services:
   mcp-mixsearch:
     image: ghcr.io/geosp/mcp-mixsearch:main
+    container_name: mcp-mixsearch
     ports:
       - "3000:3000"
     environment:
