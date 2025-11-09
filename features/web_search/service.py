@@ -446,7 +446,7 @@ class WebSearchService:
     async def _extract_with_browser(self, url: str, max_content_length: Optional[int]) -> str:
         """Browser-based content extraction for dynamic sites"""
         async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
+            browser = await p.firefox.launch(headless=True)
             try:
                 context = await browser.new_context(
                     user_agent=self.ua.random,
