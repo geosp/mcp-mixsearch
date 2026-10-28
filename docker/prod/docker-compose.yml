@@ -5,6 +5,6 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - MCP_ONLY=true
-    command: ["mcp-mixsearch@git+https://github.com/geosp/mcp-mixsearch.git", "--mode", "mcp"]
+      - MCP_AUTH_ENABLED=false
+    command: ["mcp-mixsearch@git+https://github.com/geosp/mcp-mixsearch.git", "--mode", "http"]
     restart: unless-stopped

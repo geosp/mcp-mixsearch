@@ -8,7 +8,7 @@ A comprehensive Model Context Protocol (MCP) server for advanced web search func
 - **Advanced Filtering**: Time-based, geographic, language, and content type filtering
 - **Intelligent Backend Selection**: Automatically chooses optimal search engine based on parameters
 - **Full Content Extraction**: Extract readable content from search results and specific URLs
-- **Dual Interface**: Both MCP protocol and REST API with identical functionality
+- **Two Transports**: MCP over stdio or streamable HTTP, built on [mcp-service-kit](https://github.com/geosp/mcp-service-kit)
 - **Graceful Fallbacks**: Browser-based search for reliability when APIs fail
 
 ## Quick Start
@@ -22,84 +22,57 @@ uv sync
 # Run in MCP stdio mode (default)
 uv run mcp-mixsearch
 
-# Run in MCP HTTP mode
-uv run mcp-mixsearch --mode mcp
-
-# Or run with REST API
-uv run mcp-mixsearch --mode rest
+# Run in MCP HTTP mode (local use: no auth)
+uv run mcp-mixsearch --mode http --no-auth
 ```
 
 ## Configuration
 
-Set environment variables in a `.env` file or export them:
+Set environment variables in a `.env` file or export them. CLI flags take precedence over `.env`.
 
 ```env
-# Server Configuration
-MCP_HOST=localhost
-MCP_PORT=3000
-MCP_TRANSPORT=stdio  # or 'http'
-MCP_AUTH_ENABLED=true
-MCP_CORS_ORIGINS="http://localhost:3000,http://localhost:5173"
+# Server Configuration (mcp-service-kit)
+MCP_TRANSPORT=stdio     # or 'http'  (--mode)
+MCP_HOST=0.0.0.0        # (--host)
+MCP_PORT=3000           # (--port)
+MCP_AUTH_ENABLED=false  # (--no-auth)
 
 # Web Search Configuration
 BRAVE_API_KEY=your_brave_api_key_here
 MAX_CONTENT_LENGTH=500000
 MAX_CONCURRENT_REQUESTS=5
-
-# Logging
-LOG_LEVEL=INFO
 ```
 
 ## Running Modes
 
-mcp-mixsearch supports three distinct running modes:
-
-### 1. MCP HTTP Mode
-Runs MCP server over HTTP without REST API endpoints.
-
-```bash
-uv run mcp-mixsearch --mode mcp
-```
-
-### 2. MCP Stdio Mode (Default)
-Runs MCP server over stdio without REST API endpoints.
+### MCP Stdio Mode (Default)
 
 ```bash
 uv run mcp-mixsearch --mode stdio
-# Or just run without flags (default)
+# Or just run without flags
 uv run mcp-mixsearch
 ```
 
-### 3. REST API + MCP Mode
-Runs both REST API endpoints and MCP protocol over HTTP.
+### MCP HTTP Mode
 
 ```bash
-uv run mcp-mixsearch --mode rest
+uv run mcp-mixsearch --mode http --port 3000 --no-auth
+# Or via the environment
+MCP_TRANSPORT=http MCP_AUTH_ENABLED=false uv run mcp-mixsearch
 ```
 
-### Environment Variables
+The server has no auth provider, so HTTP mode needs `--no-auth` (`MCP_AUTH_ENABLED=false`);
+without it the server refuses to start. Put an authenticating gateway in front of it if it is
+reachable by others.
 
-You can also control modes using environment variables:
-
-```bash
-# MCP over HTTP
-MCP_TRANSPORT=http MCP_ONLY=true uv run mcp-mixsearch
-
-# MCP over stdio
-MCP_TRANSPORT=stdio MCP_ONLY=true uv run mcp-mixsearch
-
-# REST API + MCP over HTTP
-MCP_TRANSPORT=http MCP_ONLY=false uv run mcp-mixsearch
-```
-
-In HTTP modes, the server runs on `http://localhost:3000` with:
+In HTTP mode the server runs on `http://localhost:3000` with:
 - MCP endpoint: `http://localhost:3000/mcp`
-- REST API docs: `http://localhost:3000/docs` (when REST API enabled)
-- Health check: `http://localhost:3000/health` (when REST API enabled)
+- Health check: `http://localhost:3000/health`
+
+Run `uv run mcp-mixsearch --help` for all options, including `--log-level`.
 
 ## Available Tools
 
-### MCP Tools
 1. **full_web_search**
    - Comprehensive web search with content extraction
    - Multi-engine search with intelligent backend selection
@@ -114,11 +87,6 @@ In HTTP modes, the server runs on `http://localhost:3000` with:
 3. **get_single_web_page_content**
    - Extract content from a specific URL
    - Args: url, max_content_length
-
-### REST API Endpoints
-- `GET /search/full_web_search` - Same as `full_web_search` with identical parameters
-- `GET /search/get_web_search_summaries` - Same as `get_web_search_summaries` with identical parameters
-- `GET /search/get_single_web_page_content` - Same as `get_single_web_page_content`
 
 ## Advanced Search Features
 
@@ -137,21 +105,13 @@ In HTTP modes, the server runs on `http://localhost:3000` with:
 ### Usage Examples
 
 **Basic search:**
-```bash
-# MCP
+```json
 {"query": "AI developments", "limit": 5}
-
-# REST
-GET /search/get_web_search_summaries?query=AI%20developments&limit=5
 ```
 
 **Advanced filtering:**
-```bash
-# MCP
+```json
 {"query": "climate policy", "country": "FR", "language": "fr", "recency_days": 30, "source": "news"}
-
-# REST
-GET /search/get_web_search_summaries?query=climate%20policy&country=FR&language=fr&recency_days=30&source=news
 ```
 
 ## Project Structure
@@ -161,10 +121,8 @@ mcp-mixsearch/
 ├── features/             # Feature implementations
 │   └── web_search/       # Web search feature
 │       ├── __init__.py
-│       ├── models.py     # Pydantic models
 │       ├── service.py    # Multi-engine search logic
 │       ├── tool.py       # MCP tool registrations
-│       ├── routes.py     # REST API routes
 │       ├── instructions.md          # Full web search documentation
 │       ├── instructions_summaries.md # Search summaries documentation
 │       └── instructions_single_page.md # Single page extraction documentation
@@ -192,7 +150,7 @@ uv build
 
 ## Dependencies
 
-- **mcp-weather**: Core MCP infrastructure
+- **mcp-service-kit**: MCP server infrastructure (transports, CLI, config)
 - fastmcp: MCP protocol implementation
 - httpx: HTTP client for content extraction
 - playwright: Browser automation for dynamic content

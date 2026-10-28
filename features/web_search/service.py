@@ -15,20 +15,10 @@ import aiohttp
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
 from fake_useragent import UserAgent
-import os
 import json
-from dotenv import load_dotenv
 from ddgs import DDGS
 
-# Load environment variables from .env file
-load_dotenv()
-
-# Configure logging to a file
-logging.basicConfig(
-    filename="web_search_debug.log",
-    level=logging.DEBUG,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+from config import WebSearchConfig
 
 logger = logging.getLogger(__name__)
 
@@ -54,12 +44,13 @@ class SearchResult:
     error: Optional[str] = None
 
 class WebSearchService:
-    def __init__(self):
+    def __init__(self, config: Optional[WebSearchConfig] = None):
+        config = config or WebSearchConfig()
         self.ua = UserAgent()
         self.timeout = aiohttp.ClientTimeout(total=30)
-        self.max_content_length = 500000
-        self.max_concurrent_requests = 5
-        self.brave_api_key = os.getenv("BRAVE_API_KEY")
+        self.max_content_length = config.max_content_length
+        self.max_concurrent_requests = config.max_concurrent_requests
+        self.brave_api_key = config.brave_api_key
 
     async def search_and_extract(self, query: str, limit: int = 5,
                                max_content_length: Optional[int] = None,

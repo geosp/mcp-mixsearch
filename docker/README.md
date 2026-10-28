@@ -1,15 +1,14 @@
 # MCP MixSearch Docker Setup
 
-This directory contains Docker Compose configurations to run the MCP MixSearch server in different modes.
+This directory contains Docker Compose configurations to run the MCP MixSearch server over streamable HTTP.
 
 ### Available Setups
 
 ### Development Setups (build locally)
-- **MCP-only Mode** (`mcp/docker-compose.yml`): Pure MCP protocol with Streaming HTTP - REST API disabled
-- **REST Mode** (`rest/docker-compose.yml`): Full REST API + MCP protocol support
+- **MCP Mode** (`mcp/docker-compose.yml`): MCP protocol over streamable HTTP
 
 ### Production Setup (use published images)
-- **MCP-only Mode** (`prod/docker-compose.yml`): Uses published GHCR image for production MCP-only deployment
+- **MCP Mode** (`prod/docker-compose.yml`): Uses published GHCR image for production deployment
 
 ## Prerequisites
 
@@ -20,19 +19,8 @@ This directory contains Docker Compose configurations to run the MCP MixSearch s
 
 ### Development Mode (Recommended for local development)
 
-#### MCP-only Mode (Default)
-For pure MCP protocol communication:
-
 ```bash
 cd docker/mcp
-docker-compose up --build -d
-```
-
-#### REST Mode
-For full API access with health checks and documentation:
-
-```bash
-cd docker/rest
 docker-compose up --build -d
 ```
 
@@ -40,7 +28,6 @@ docker-compose up --build -d
 
 **Note**: Production setups use the published Docker image from GHCR and run the package directly from the GitHub repository using `uvx mcp-mixsearch@git+https://github.com/geosp/mcp-mixsearch.git`.
 
-#### Production MCP-only Mode
 For production deployment using published images:
 
 ```bash
@@ -50,25 +37,19 @@ docker-compose up -d
 
 ### Check Status
 ```bash
-# Development MCP-only
+# Development
 cd docker/mcp && docker-compose logs -f mcp-mixsearch
 
-# Development REST
-cd docker/rest && docker-compose logs -f mcp-mixsearch
-
-# Production MCP-only
+# Production
 cd docker/prod && docker-compose logs -f mcp-mixsearch
 ```
 
 ### Stop Services
 ```bash
-# Development MCP-only
+# Development
 cd docker/mcp && docker-compose down
 
-# Development REST
-cd docker/rest && docker-compose down
-
-# Production MCP-only
+# Production
 cd docker/prod && docker-compose down
 ```
 
@@ -77,30 +58,22 @@ cd docker/prod && docker-compose down
 ### Development Setups (Local building)
 These setups build the Docker image locally and mount the source code for live development.
 
-#### MCP-only Mode (docker-compose.yml)
+#### MCP Mode (mcp/docker-compose.yml)
 The service is configured to:
 - Build from the parent directory's Dockerfile
 - Mount the project directory as `/app` for live code changes
 - Expose port 3000 for MCP communication
-- Run in Streaming HTTP mode (`MCP_ONLY=true`) for MCP protocol - **REST API endpoints are disabled**
-- Use uvx to run the local MCP MixSearch package
-
-#### REST Mode (docker-compose.rest.yml)
-The service is configured to:
-- Build from the parent directory's Dockerfile
-- Mount the project directory as `/app` for live code changes
-- Expose port 3000 for MCP communication
-- Run with full REST API + MCP protocol support
+- Run in streamable HTTP mode (`--mode http`) without auth (`MCP_AUTH_ENABLED=false`)
 - Use uvx to run the local MCP MixSearch package
 
 ### Production Setup (Published images)
 This setup uses pre-built images from GitHub Container Registry for faster deployment.
 
-#### MCP-only Mode (prod/docker-compose.yml)
+#### MCP Mode (prod/docker-compose.yml)
 The service is configured to:
 - Use published image: `ghcr.io/geosp/mcp-mixsearch:main`
 - Expose port 3000 for MCP communication
-- Run in MCP-only mode (`--mode mcp`) for pure MCP protocol communication
+- Run in streamable HTTP mode (`--mode http`) without auth (`MCP_AUTH_ENABLED=false`)
 - No source code mounting required
 
 ## Development
@@ -108,11 +81,7 @@ The service is configured to:
 For development setups, the volume mount allows you to make changes to the code without rebuilding the container. Simply restart the service after changes:
 
 ```bash
-# Development MCP-only mode
 cd docker/mcp && docker-compose restart mcp-mixsearch
-
-# Development REST mode
-cd docker/rest && docker-compose restart mcp-mixsearch
 ```
 
 **Note**: Production setups use published images and do not support live code reloading.
@@ -120,10 +89,10 @@ cd docker/rest && docker-compose restart mcp-mixsearch
 ## Troubleshooting
 
 - If you encounter permission issues, ensure Docker is running and you have proper permissions
-- Check the logs with `docker-compose logs mcp-mixsearch` (or `docker-compose -f docker-compose.rest.yml logs mcp-mixsearch`) for detailed error messages
+- Check the logs with `docker-compose logs mcp-mixsearch` for detailed error messages
 - The container uses uv for Python package management, which handles dependencies automatically
-- **MCP-only mode**: When `MCP_ONLY=true`, REST API endpoints like `/health` are disabled. Only the `/mcp` endpoint is available for MCP protocol communication
-- **REST mode**: Full API access available including `/health`, `/docs`, and `/mcp` endpoints
+- **Endpoints**: `/mcp` for the MCP protocol and `/health` for health checks. There is no REST API
+- **Auth**: The server has no auth provider, so with `MCP_AUTH_ENABLED` unset or `true` it refuses to start; keep `MCP_AUTH_ENABLED=false` and put an authenticating gateway in front if needed
 - **Production mode**: Uses `uvx` to run the package directly from the GitHub repository (`git+https://github.com/geosp/mcp-mixsearch.git`)
 - **Versioned deployments**: Use specific version tags (e.g., `:v1.0.0`) for stable, immutable deployments instead of `:main` for bleeding-edge
 
@@ -131,7 +100,8 @@ cd docker/rest && docker-compose restart mcp-mixsearch
 
 You can add environment variables in the `docker-compose.yml` files under the `environment` section if needed for configuration.
 
-- `MCP_ONLY=true`: Enables Streaming HTTP mode for MCP protocol communication (used in default `docker-compose.yml`)
+- `MCP_AUTH_ENABLED=false`: Serves HTTP without auth (required, since the server has no auth provider)
+- `MCP_TRANSPORT`, `MCP_HOST`, `MCP_PORT`: Transport and bind address (the compose files pass `--mode http`)
 - `UV_CACHE_DIR=/tmp/uv-cache`: Sets the cache directory for uv package manager
 
 ## Advanced: LXC Environment Setup
@@ -154,25 +124,15 @@ lxc.mount.auto = proc:rw sys:rw
 Use `sudo` with podman-compose commands:
 
 ```bash
-# Development MCP-only mode
+# Development mode
 sudo podman-compose up --build -d
 sudo podman-compose logs -f mcp-mixsearch
 sudo podman-compose down
 
-# Development REST mode
-sudo podman-compose -f docker-compose.rest.yml up --build -d
-sudo podman-compose -f docker-compose.rest.yml logs -f mcp-mixsearch
-sudo podman-compose -f docker-compose.rest.yml down
-
-# Production MCP-only mode
+# Production mode
 sudo podman-compose -f docker-compose.prod.yml up -d
 sudo podman-compose -f docker-compose.prod.yml logs -f mcp-mixsearch
 sudo podman-compose -f docker-compose.prod.yml down
-
-# Production REST mode
-sudo podman-compose -f docker-compose.prod.rest.yml up -d
-sudo podman-compose -f docker-compose.prod.rest.yml logs -f mcp-mixsearch
-sudo podman-compose -f docker-compose.prod.rest.yml down
 
 # Production versioned mode
 sudo podman-compose -f docker-compose.prod.v1.0.0.yml up -d
@@ -202,19 +162,11 @@ To use the MCP MixSearch server with VS Code, configure your `.vscode/mcp.json`:
 You can test the MCP server connection:
 
 ```bash
-# Health check (REST mode only)
+# Health check
 curl http://localhost:3000/health
 
-# MCP endpoint (both modes)
+# MCP endpoint
 curl http://localhost:3000/mcp
-
-# Test search API (REST mode only)
-curl -X POST "http://localhost:3000/search" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "AI developments 2024",
-    "limit": 5
-  }'
 ```
 
 ## Semantic Versioning & Releases

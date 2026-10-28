@@ -5,11 +5,10 @@ Provides web search tools through the MCP protocol.
 """
 
 import logging
-from typing import Dict, Any
 
 from fastmcp import FastMCP
 
-from core.utils import inject_docstring, load_instruction
+from mcp_service_kit.utils import inject_docstring, load_instruction
 from .service import WebSearchService
 
 logger = logging.getLogger(__name__)
@@ -35,7 +34,7 @@ def register_tool(mcp: FastMCP, web_search_service: WebSearchService) -> None:
         source: str = None,  # Source type filter (partially supported)
         language: str = None,  # Language filter (now supported!)
         country: str = None  # Country filter (now supported!)
-    ) -> Dict[str, Any]:
+    ) -> str:
         """Comprehensive web search with full content extraction"""
         try:
             # Handle alternative parameter names
@@ -88,9 +87,7 @@ def register_tool(mcp: FastMCP, web_search_service: WebSearchService) -> None:
 
             logger.info(f"MCP tool full_web_search completed: {result['total_results']} results")
 
-            return {
-                "content": [{"type": "text", "text": response_text}]
-            }
+            return response_text
 
         except Exception as e:
             logger.error(f"MCP tool full_web_search error: {e}")
@@ -106,7 +103,7 @@ def register_tool(mcp: FastMCP, web_search_service: WebSearchService) -> None:
         source: str = None,  # Source type filter (partially supported)
         language: str = None,  # Language filter (now supported!)
         country: str = None  # Country filter (now supported!)
-    ) -> Dict[str, Any]:
+    ) -> str:
         """Lightweight web search returning only summaries"""
         try:
             # Handle alternative parameter names
@@ -145,9 +142,7 @@ def register_tool(mcp: FastMCP, web_search_service: WebSearchService) -> None:
 
             logger.info(f"MCP tool get_web_search_summaries completed: {result['total_results']} results")
 
-            return {
-                "content": [{"type": "text", "text": response_text}]
-            }
+            return response_text
 
         except Exception as e:
             logger.error(f"MCP tool get_web_search_summaries error: {e}")
@@ -155,7 +150,7 @@ def register_tool(mcp: FastMCP, web_search_service: WebSearchService) -> None:
 
     @mcp.tool()
     @inject_docstring(lambda: load_instruction("instructions_single_page.md", __file__))
-    async def get_single_web_page_content(url: str, max_content_length: int = None) -> Dict[str, Any]:
+    async def get_single_web_page_content(url: str, max_content_length: int = None) -> str:
         """Extract content from a single webpage"""
         try:
             logger.info(f"MCP tool get_single_web_page_content: url='{url}'")
@@ -172,9 +167,7 @@ def register_tool(mcp: FastMCP, web_search_service: WebSearchService) -> None:
 
             logger.info(f"MCP tool get_single_web_page_content completed: {word_count} words")
 
-            return {
-                "content": [{"type": "text", "text": response_text}]
-            }
+            return response_text
 
         except Exception as e:
             logger.error(f"MCP tool get_single_web_page_content error: {e}")
