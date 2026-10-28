@@ -11,10 +11,9 @@ Run it with:
 import logging
 
 from fastmcp import FastMCP
+from mcp_service_kit import BaseMCPServer, BaseService, create_main_with_modes
 from starlette.requests import Request
 from starlette.responses import JSONResponse
-
-from mcp_service_kit import BaseMCPServer, BaseService, create_main_with_modes
 
 from config import AppConfig
 from features.web_search.service import WebSearchService

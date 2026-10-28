@@ -1,3 +1,6 @@
+# Fixed project name: the folder name alone (mcp/prod) collides with other projects
+name: mcp-mixsearch
+
 services:
   mcp-mixsearch:
     build:
@@ -9,7 +12,8 @@ services:
     working_dir: /app
     command: ["--from", ".", "mcp-mixsearch", "--mode", "http"]
     ports:
-      - "3000:3000"
+      # Host port: override with MCP_HOST_PORT=3002 docker compose up -d
+      - "${MCP_HOST_PORT:-3000}:3000"
     environment:
       - UV_CACHE_DIR=/tmp/uv-cache
       - MCP_AUTH_ENABLED=false

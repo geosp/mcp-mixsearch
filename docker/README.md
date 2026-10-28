@@ -89,6 +89,8 @@ cd docker/mcp && docker-compose restart mcp-mixsearch
 ## Troubleshooting
 
 - If you encounter permission issues, ensure Docker is running and you have proper permissions
+- **Port 3000 already allocated**: another container or process uses the host port. Pick another one with `MCP_HOST_PORT`, e.g. `MCP_HOST_PORT=3002 docker compose up -d`, and point clients at `http://localhost:3002/mcp`
+- The compose files set `name: mcp-mixsearch`, so this project doesn't share the default `mcp`/`prod` project name with other compose projects (which would show their containers as "orphans")
 - Check the logs with `docker-compose logs mcp-mixsearch` for detailed error messages
 - The container uses uv for Python package management, which handles dependencies automatically
 - **Endpoints**: `/mcp` for the MCP protocol and `/health` for health checks. There is no REST API

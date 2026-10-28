@@ -4,7 +4,7 @@ Use this when you have a specific URL and need the full text content for analysi
 
 Args:
     url: The URL of the web page to extract content from
-    max_content_length: Maximum characters for the extracted content (0 = no limit)
+    max_content_length: Maximum characters for the extracted content (default: server limit, 500,000)
 
 Returns:
     Formatted text containing the extracted page content with word count
@@ -13,15 +13,16 @@ Returns:
 
 ### url (required)
 - Must be a valid HTTP or HTTPS URL
+- Only public web addresses are allowed: `file://` URLs, localhost and private-network addresses are rejected
 - Include the full URL with protocol (http:// or https://)
 - Examples: 
   - "https://example.com/article"
   - "https://docs.python.org/3/library/asyncio.html"
   - "https://github.com/user/repo/blob/main/README.md"
 
-### max_content_length (optional, default unlimited)
-- Limits the extracted content to specified character count
-- Common values: `10000` (summaries), `50000` (full pages), `null` (no limit)
+### max_content_length (optional, default: server limit)
+- Limits the extracted content to specified character count; truncated content ends with a `[Content truncated ...]` note
+- Common values: `10000` (summaries), `50000` (full pages), `null` (server limit, 500,000 by default)
 
 ## Usage Examples
 

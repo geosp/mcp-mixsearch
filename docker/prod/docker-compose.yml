@@ -1,9 +1,13 @@
+# Fixed project name: the folder name alone (mcp/prod) collides with other projects
+name: mcp-mixsearch
+
 services:
   mcp-mixsearch:
     image: ghcr.io/geosp/mcp-mixsearch:main
     container_name: mcp-mixsearch
     ports:
-      - "3000:3000"
+      # Host port: override with MCP_HOST_PORT=3002 docker compose up -d
+      - "${MCP_HOST_PORT:-3000}:3000"
     environment:
       - MCP_AUTH_ENABLED=false
     command: ["mcp-mixsearch@git+https://github.com/geosp/mcp-mixsearch.git", "--mode", "http"]
