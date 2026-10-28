@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 # Install system dependencies (git + build tools + Playwright dependencies)
 RUN apt-get update \
@@ -38,14 +38,15 @@ RUN apt-get update \
 # Install uv (universal package runner for MCP)
 RUN pip install --no-cache-dir uv
 
-# Pre-install Playwright and browsers to avoid runtime installation
-RUN pip install --no-cache-dir playwright \
-    && playwright install firefox \
-    && playwright install-deps firefox
-
-# Set environment variables for Playwright
+# Set environment variables for Playwright (before installing, so browsers land in /ms-playwright)
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 ENV PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=true
+
+# Pre-install Playwright and browsers to avoid runtime installation
+# Keep the version in sync with the playwright pin in pyproject.toml
+RUN pip install --no-cache-dir playwright==1.64.1 \
+    && playwright install firefox \
+    && playwright install-deps firefox
 
 # Expose the default MCP port (used by most servers)
 EXPOSE 3000
