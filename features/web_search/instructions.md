@@ -8,7 +8,7 @@ Args:
     query: Search query string (1-200 characters)
     limit: Number of results to return with full content (1-10, default 5)
     include_content: Whether to extract full page content (default true)
-    max_content_length: Maximum characters per result content (0 = no limit)
+    max_content_length: Maximum characters per result content (default: server limit, 500,000)
     top_n: Alternative name for limit (for compatibility)
     recency_days: Days to look back for recent content (time filtering)
     source: Content type filter ("news", "images", "videos", etc.)
@@ -32,9 +32,9 @@ Returns:
 - Set to `true` for full content extraction (default)
 - Set to `false` to get only titles, URLs, and descriptions
 
-### max_content_length (optional, default unlimited)
-- Limits characters per result to manage response size
-- Common values: `10000` (focused content), `50000` (detailed research), `null` (no limit)
+### max_content_length (optional, default: server limit)
+- Limits characters per result to manage response size; truncated content ends with a `[Content truncated ...]` note
+- Common values: `10000` (focused content), `50000` (detailed research), `null` (server limit, 500,000 by default)
 
 ### top_n (optional, compatibility parameter)
 - Alternative name for `limit` parameter
@@ -53,13 +53,14 @@ Returns:
   - `"videos"`: Video content
   - `"web"` or null: Regular web search (default)
 
-### language (optional, language filtering) 
-- Filters results by language
-- Supported values: Language codes like `"en"`, `"es"`, `"fr"`, `"de"`, `"zh"`
+### language (optional, language preference)
+- Preferred result language, as a language code like `"en"`, `"es"`, `"fr"`, `"de"`, `"zh"`
+- Applied directly when the server uses the Brave Search API; otherwise it refines the `country` region (e.g. `country: "CA"` + `language: "fr"`) and has no effect on its own
 
 ### country (optional, geographic filtering)
-- Filters results by geographic region/country
+- Prefers results for a country/region
 - Supported values: Country codes like `"US"`, `"GB"`, `"FR"`, `"DE"`, `"CA"`
+- Some search backends treat it as a hint rather than a strict filter
 
 ## Usage Examples
 

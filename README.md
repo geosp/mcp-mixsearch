@@ -4,11 +4,11 @@ A comprehensive Model Context Protocol (MCP) server for advanced web search func
 
 ## Features
 
-- **Multi-Engine Search**: Access to multiple search engines (Brave, DuckDuckGo, Google, Bing, Yandex) via DDGS library
+- **Multi-Engine Search**: The official Brave Search API (with a key) and the DDGS metasearch library, with browser-scraping fallbacks
 - **Advanced Filtering**: Time-based, geographic, language, and content type filtering
-- **Intelligent Backend Selection**: Automatically chooses optimal search engine based on parameters
-- **Full Content Extraction**: Extract readable content from search results and specific URLs
-- **Dual Interface**: Both MCP protocol and REST API with identical functionality
+- **Full Content Extraction**: Main-content extraction with [trafilatura](https://trafilatura.readthedocs.io), rendering JavaScript pages in a shared headless Firefox when needed
+- **Safe Fetching**: Only public http(s) URLs are fetched (see [Security](#security))
+- **Two Transports**: MCP over stdio or streamable HTTP, built on [mcp-service-kit](https://github.com/geosp/mcp-service-kit)
 - **Graceful Fallbacks**: Browser-based search for reliability when APIs fail
 
 ## Quick Start
@@ -22,84 +22,59 @@ uv sync
 # Run in MCP stdio mode (default)
 uv run mcp-mixsearch
 
-# Run in MCP HTTP mode
-uv run mcp-mixsearch --mode mcp
-
-# Or run with REST API
-uv run mcp-mixsearch --mode rest
+# Run in MCP HTTP mode (local use: no auth)
+uv run mcp-mixsearch --mode http --no-auth
 ```
 
 ## Configuration
 
-Set environment variables in a `.env` file or export them:
+Set environment variables in a `.env` file or export them. CLI flags take precedence over `.env`.
 
 ```env
-# Server Configuration
-MCP_HOST=localhost
-MCP_PORT=3000
-MCP_TRANSPORT=stdio  # or 'http'
-MCP_AUTH_ENABLED=true
-MCP_CORS_ORIGINS="http://localhost:3000,http://localhost:5173"
+# Server Configuration (mcp-service-kit)
+MCP_TRANSPORT=stdio     # or 'http'  (--mode)
+MCP_HOST=0.0.0.0        # (--host)
+MCP_PORT=3000           # (--port)
+MCP_AUTH_ENABLED=false  # (--no-auth)
 
 # Web Search Configuration
-BRAVE_API_KEY=your_brave_api_key_here
-MAX_CONTENT_LENGTH=500000
-MAX_CONCURRENT_REQUESTS=5
-
-# Logging
-LOG_LEVEL=INFO
+BRAVE_API_KEY=your_brave_api_key_here  # optional: enables the Brave Search API engine
+MAX_CONTENT_LENGTH=500000              # default per-page content limit (characters)
+MAX_CONCURRENT_REQUESTS=5              # concurrent page extractions
+DDGS_BACKEND=auto                      # ddgs backend(s), e.g. auto or duckduckgo,bing
+ALLOW_PRIVATE_URLS=false               # true allows private/loopback URLs (trusted networks only)
 ```
 
 ## Running Modes
 
-mcp-mixsearch supports three distinct running modes:
-
-### 1. MCP HTTP Mode
-Runs MCP server over HTTP without REST API endpoints.
-
-```bash
-uv run mcp-mixsearch --mode mcp
-```
-
-### 2. MCP Stdio Mode (Default)
-Runs MCP server over stdio without REST API endpoints.
+### MCP Stdio Mode (Default)
 
 ```bash
 uv run mcp-mixsearch --mode stdio
-# Or just run without flags (default)
+# Or just run without flags
 uv run mcp-mixsearch
 ```
 
-### 3. REST API + MCP Mode
-Runs both REST API endpoints and MCP protocol over HTTP.
+### MCP HTTP Mode
 
 ```bash
-uv run mcp-mixsearch --mode rest
+uv run mcp-mixsearch --mode http --port 3000 --no-auth
+# Or via the environment
+MCP_TRANSPORT=http MCP_AUTH_ENABLED=false uv run mcp-mixsearch
 ```
 
-### Environment Variables
+The server has no auth provider, so HTTP mode needs `--no-auth` (`MCP_AUTH_ENABLED=false`);
+without it the server refuses to start. Put an authenticating gateway in front of it if it is
+reachable by others.
 
-You can also control modes using environment variables:
-
-```bash
-# MCP over HTTP
-MCP_TRANSPORT=http MCP_ONLY=true uv run mcp-mixsearch
-
-# MCP over stdio
-MCP_TRANSPORT=stdio MCP_ONLY=true uv run mcp-mixsearch
-
-# REST API + MCP over HTTP
-MCP_TRANSPORT=http MCP_ONLY=false uv run mcp-mixsearch
-```
-
-In HTTP modes, the server runs on `http://localhost:3000` with:
+In HTTP mode the server runs on `http://localhost:3000` with:
 - MCP endpoint: `http://localhost:3000/mcp`
-- REST API docs: `http://localhost:3000/docs` (when REST API enabled)
-- Health check: `http://localhost:3000/health` (when REST API enabled)
+- Health check: `http://localhost:3000/health`
+
+Run `uv run mcp-mixsearch --help` for all options, including `--log-level`.
 
 ## Available Tools
 
-### MCP Tools
 1. **full_web_search**
    - Comprehensive web search with content extraction
    - Multi-engine search with intelligent backend selection
@@ -115,43 +90,51 @@ In HTTP modes, the server runs on `http://localhost:3000` with:
    - Extract content from a specific URL
    - Args: url, max_content_length
 
-### REST API Endpoints
-- `GET /search/full_web_search` - Same as `full_web_search` with identical parameters
-- `GET /search/get_web_search_summaries` - Same as `get_web_search_summaries` with identical parameters
-- `GET /search/get_single_web_page_content` - Same as `get_single_web_page_content`
-
 ## Advanced Search Features
 
 ### Multi-Engine Architecture
-- **Primary**: DDGS library with multiple backend support (Brave, DuckDuckGo, Google, Bing, Yandex)
-- **Intelligent backend selection**: Automatically chooses best engine based on parameters
-- **Fallbacks**: Browser-based search for reliability
+Engines are tried in order. The first result set whose titles and descriptions match the query
+well enough is used; if none does, the best one found is returned.
+
+1. **Brave Search API**: only when `BRAVE_API_KEY` is set (web and news)
+2. **DDGS**: metasearch library, `backend` from `DDGS_BACKEND` (`auto` by default)
+3. **Brave (browser)**: scrapes search.brave.com in headless Firefox
+4. **DuckDuckGo (HTML)**: scrapes the DuckDuckGo HTML results page
+
+Page content is fetched over HTTP and extracted with trafilatura. Pages that need JavaScript
+or return a bot check are rendered in one shared headless Firefox, with a new browser context
+per page.
 
 ### Supported Parameters
 - **Core**: `query` (required), `limit`/`top_n`, `include_content`, `max_content_length`
 - **Time filtering**: `recency_days` (1=day, 7=week, 30=month, 365=year)
 - **Content type**: `source` ("news", "images", "videos", "web")
-- **Language filtering**: `language` (e.g., "en", "es", "fr", "de")
+- **Language filtering**: `language` (e.g., "en", "es", "fr", "de"). Applied directly by the Brave
+  Search API; for the other engines it refines `country` into a region such as `ca-fr`
 - **Geographic filtering**: `country` (e.g., "US", "GB", "FR", "DE")
+
+## Security
+
+The extraction tools fetch URLs chosen by the model, so they only fetch **public http(s)
+URLs**. `file://` and other schemes are rejected, and so are hosts that resolve to loopback,
+private, link-local (including cloud metadata such as `169.254.169.254`) or other non-public
+addresses. The check runs before the fetch, on every HTTP redirect, and on every request the
+browser makes. Set `ALLOW_PRIVATE_URLS=true` only on trusted networks where fetching internal
+sites is intended.
+
+Known limitation: DNS rebinding (a host that resolves to a public address when checked and a
+private one when connected) is not prevented.
 
 ### Usage Examples
 
 **Basic search:**
-```bash
-# MCP
+```json
 {"query": "AI developments", "limit": 5}
-
-# REST
-GET /search/get_web_search_summaries?query=AI%20developments&limit=5
 ```
 
 **Advanced filtering:**
-```bash
-# MCP
+```json
 {"query": "climate policy", "country": "FR", "language": "fr", "recency_days": 30, "source": "news"}
-
-# REST
-GET /search/get_web_search_summaries?query=climate%20policy&country=FR&language=fr&recency_days=30&source=news
 ```
 
 ## Project Structure
@@ -161,13 +144,18 @@ mcp-mixsearch/
 ├── features/             # Feature implementations
 │   └── web_search/       # Web search feature
 │       ├── __init__.py
-│       ├── models.py     # Pydantic models
-│       ├── service.py    # Multi-engine search logic
+│       ├── service.py    # Orchestrates engines and content extraction
+│       ├── engines.py    # Brave API, DDGS, Brave and DuckDuckGo scraping engines
+│       ├── extraction.py # HTTP + trafilatura extraction with browser fallback
+│       ├── browser.py    # Shared headless Firefox
+│       ├── filters.py    # Normalized search filters and per-engine parameters
+│       ├── url_safety.py # Public http(s) URL guard
+│       ├── models.py     # SearchResult
 │       ├── tool.py       # MCP tool registrations
-│       ├── routes.py     # REST API routes
 │       ├── instructions.md          # Full web search documentation
 │       ├── instructions_summaries.md # Search summaries documentation
 │       └── instructions_single_page.md # Single page extraction documentation
+├── tests/                # pytest suite (offline by default)
 ├── config.py             # Configuration management
 ├── server.py             # Main server entry point
 ├── pyproject.toml        # Project configuration
@@ -181,8 +169,14 @@ mcp-mixsearch/
 ### Testing
 
 ```bash
-pytest
+uv run pytest          # offline tests: network, DNS and the browser are faked
+uv run pytest -m live  # live tests against real search engines and websites
+uv run ruff check
 ```
+
+Browser-based paths need Firefox for Playwright: `uv run playwright install firefox`.
+CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs ruff and the offline tests on
+pull requests and pushes to `main`.
 
 ### Building
 
@@ -192,10 +186,12 @@ uv build
 
 ## Dependencies
 
-- **mcp-weather**: Core MCP infrastructure
+- **mcp-service-kit**: MCP server infrastructure (transports, CLI, config)
 - fastmcp: MCP protocol implementation
-- httpx: HTTP client for content extraction
-- playwright: Browser automation for dynamic content
+- ddgs: Metasearch library
+- httpx: HTTP client for search APIs and content extraction
+- trafilatura: Main-content extraction
+- playwright: Browser automation for dynamic content (pinned to match the Docker image's Firefox)
 - beautifulsoup4: HTML parsing
 - fake-useragent: Random user agents
 

@@ -10,7 +10,7 @@ Args:
     top_n: Alternative name for limit (for compatibility)
     recency_days: Days to look back for recent content (time filtering)
     source: Content type filter ("news", "images", "videos", etc.)
-    language: Language filter (e.g., "en", "es", "fr", "de")
+    language: Language preference (e.g., "en", "es", "fr", "de"); refines country when no Brave API key is configured
     country: Geographic filter (e.g., "US", "GB", "FR", "DE")
 
 Returns:

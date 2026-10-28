@@ -1,11 +1,11 @@
 {
 	"servers": {
-		// MCP_TRANSPORT=http MCP_ONLY=true uv run mcp-weather
+		// uv run mcp-mixsearch --mode http --no-auth
 		"search-mcp-http": {
 			"type": "http",
 			"url": "http://localhost:3000/mcp",
 			"headers": {
-				"Authorization": "Bearer iaOPJQ29pv9gVVepAA89ZCLvM7eDbc4dbPGRxLl6dtLCFxNRNgU5Ygr0hMlP"
+				"Authorization": "Bearer ${input:mcp-token}"
 			}
 		},
 		// "weather-specbridge": {
@@ -19,5 +19,12 @@
 		// 	"args": ["-m", "mcp_weather.server"]
 		// },
 	},
-	"inputs": []
+	"inputs": [
+		{
+			"type": "promptString",
+			"id": "mcp-token",
+			"description": "Bearer token for the MCP gateway",
+			"password": true
+		}
+	]
 }
