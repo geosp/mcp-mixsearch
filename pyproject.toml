@@ -53,6 +53,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["."]
+# Ship only the runtime code, not repo files like .vscode/ or docker/
+only-include = ["server.py", "config.py", "features"]
+
 [tool.hatch.metadata]
 allow-direct-references = true
