@@ -43,7 +43,7 @@ describe parallel fusion. The decision log notes the new `Engines:` text line.
 
   Verify: `grep -n -i "quality\|tried in order\|backend selection\|first search engine" README.md .env.example`
   finds nothing stale.
-- [ ] 2.3 Add a line to `docs/decision-log.md` saying that both search tools print an `Engines:`
+- [x] 2.3 Add a line to `docs/decision-log.md` saying that both search tools print an `Engines:`
   line after `Description:`. Then run the AGENTS.md checks from a clean checkout. Verify: the line
   is present and `uv sync --locked`, `ruff check`, `ruff format --check`, `mypy`, `pytest` and
   `sync_agents.py --check` all pass.

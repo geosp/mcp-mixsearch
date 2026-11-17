@@ -251,7 +251,7 @@ Tasks live in `phases/NN-*.md`. Phase 01: search behavior (R1–R9, R11, R12). P
 | Phase | Title | Status | Tasks |
 | --- | --- | --- | --- |
 | 01 | Parallel engines with rank fusion | done | 9/9 |
-| 02 | Show engines in tool output and docs | in-progress | 0/4 |
+| 02 | Show engines in tool output and docs | in-progress | 4/4 |
 
 ## Decision log
 
