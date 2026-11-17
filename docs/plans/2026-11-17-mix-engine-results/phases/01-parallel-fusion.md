@@ -81,7 +81,7 @@ offline.
 
 ### 4. Record and check
 
-- [ ] 4.1 Add two lines to `docs/decision-log.md`:
+- [x] 4.1 Add two lines to `docs/decision-log.md`:
   - Search results are fused from several engines by RRF, and each result gains an `engines`
     list. Existing fields are unchanged.
   - DuckDuckGo HTML and the Brave browser engine answer `web` searches only.
