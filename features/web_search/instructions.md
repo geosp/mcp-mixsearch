@@ -16,7 +16,9 @@ Args:
     country: Geographic filter (e.g., "US", "GB", "FR", "DE")
 
 Returns:
-    Formatted text containing search results with full extracted content
+    Formatted text containing search results with full extracted content. Results are merged
+    from several search engines queried in parallel and ranked by how highly and how often the
+    engines list them; each result has an "Engines:" line naming the engines that returned it.
 
 ## Parameter Usage Guidelines
 
@@ -55,7 +57,7 @@ Returns:
 
 ### language (optional, language preference)
 - Preferred result language, as a language code like `"en"`, `"es"`, `"fr"`, `"de"`, `"zh"`
-- Applied directly when the server uses the Brave Search API; otherwise it refines the `country` region (e.g. `country: "CA"` + `language: "fr"`) and has no effect on its own
+- Applied directly by the Brave Search API when the server has a key; for the other engines it refines the `country` region (e.g. `country: "CA"` + `language: "fr"`) and has no effect on its own
 
 ### country (optional, geographic filtering)
 - Prefers results for a country/region

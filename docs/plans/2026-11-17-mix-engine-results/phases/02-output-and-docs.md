@@ -31,7 +31,7 @@ describe parallel fusion. The decision log notes the new `Engines:` text line.
 
 ### 2. Docs
 
-- [ ] 2.1 Update `instructions.md` and `instructions_summaries.md`. Describe the `Engines:` line
+- [x] 2.1 Update `instructions.md` and `instructions_summaries.md`. Describe the `Engines:` line
   under Returns, and say that results are merged from several engines (R10). Verify: the tests in
   `tests/test_tools.py` still pass. Read both files and confirm that nothing says only one engine
   is used.
