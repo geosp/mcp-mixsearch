@@ -4,6 +4,7 @@ Decisions about constraints, interfaces, tooling and process that are not record
 
 | Date | Decision | Reason |
 | --- | --- | --- |
+| 2026-11-17 | `full_web_search` and `get_web_search_summaries` print an `Engines: <labels>` line after each result's `Description:` line, and omit it when a result lists no engines. Every other line is unchanged. | The tools return formatted text, so MCP clients see the `engines` list only if the text shows it |
 | 2026-11-17 | Search results are fused from the cheap engines (BraveAPI with a key, DDGS, DuckDuckGo HTML), queried in parallel, by reciprocal rank fusion. Each result gains an `engines` list of the engines that returned it; existing fields are unchanged. The word-overlap quality check is removed. | Mixing engines was the project's purpose, and agreement between engines is a better relevance signal. Plan: `docs/plans/2026-11-17-mix-engine-results` |
 | 2026-11-17 | DuckDuckGo HTML and the Brave browser engine answer `web` searches only; for news, images and videos they return nothing | They can't search other types, and in fused results their web pages would pollute news and image results |
 | 2026-11-17 | Reviews follow the `small` profile in `docs/reviews/README.md` | Sized to the project; change it here and in that file if the project grows |
