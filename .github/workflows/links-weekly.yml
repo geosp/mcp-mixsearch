@@ -1,0 +1,44 @@
+# Weekly online link check over all Markdown, including external URLs.
+# Informational only: not a required check, so a slow or down website never
+# blocks a merge (PR CI checks internal links offline).
+# 429 (rate limited) counts as reachable, so a site that always rate-limits the
+# runner is never really checked; that is accepted to keep the report readable.
+# lychee is pinned here and in ci-gate.yml and bumped by hand: set LYCHEE_VERSION and
+# LYCHEE_SHA256 from the release's checksum file.
+
+name: links-weekly
+
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  LYCHEE_VERSION: "0.24.2"
+  LYCHEE_SHA256: "1f4e0ef7f6554a6ed33dd7ac144fb2e1bbed98598e7af973042fc5cd43951c9a"
+
+jobs:
+  links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install lychee (pinned, checksum verified)
+        run: |
+          f="lychee-x86_64-unknown-linux-gnu.tar.gz"
+          curl -fsSLo "$f" "https://github.com/lycheeverse/lychee/releases/download/lychee-v${LYCHEE_VERSION}/${f}"
+          echo "${LYCHEE_SHA256}  ${f}" | sha256sum -c -
+          tar -xzf "$f" --strip-components=1 lychee-x86_64-unknown-linux-gnu/lychee
+      - name: Check all links
+        env:
+          # Read-only token, so GitHub links aren't rate limited.
+          GITHUB_TOKEN: ${{ github.token }}
+        run: >-
+          ./lychee --no-progress --include-fragments --hidden
+          --max-retries 3 --accept 200,206,429
+          --exclude-path '\.claude/skills' --exclude-path '\.git/' --exclude-path '\.venv'
+          './**/*.md'

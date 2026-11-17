@@ -1,0 +1,7 @@
+# gitleaks configuration: all default rules. Add an allowlist only for a reviewed
+# false positive, scoped to the rule, the exact path and the matched line
+# (`condition = "AND"`), with a description saying why.
+# The `secrets` CI job runs a canary that checks the scanner still detects a key.
+
+[extend]
+useDefault = true
