@@ -5,7 +5,7 @@ Provides web search tools through the MCP protocol.
 """
 
 import logging
-from typing import Any, Callable, Optional, TypeVar, cast
+from typing import Any, Callable, Dict, Optional, TypeVar, cast
 
 from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
@@ -23,6 +23,12 @@ F = TypeVar("F", bound=Callable[..., Any])
 def docstring_from(filename: str) -> Callable[[F], F]:
     """Typed wrapper for inject_docstring, which has no return annotation"""
     return cast(Callable[[F], F], inject_docstring(lambda: load_instruction(filename, __file__)))
+
+
+def engines_line(result: Dict[str, Any]) -> str:
+    """'Engines: A, B' line for a result, or "" when it lists no engines"""
+    engines = result.get("engines")
+    return f"Engines: {', '.join(engines)}\n" if engines else ""
 
 
 def register_tool(mcp: FastMCP, web_search_service: WebSearchService) -> None:
@@ -69,6 +75,7 @@ def register_tool(mcp: FastMCP, web_search_service: WebSearchService) -> None:
             response_text += f"**{i}. {search_result['title']}**\n"
             response_text += f"URL: {search_result['url']}\n"
             response_text += f"Description: {search_result['description']}\n"
+            response_text += engines_line(search_result)
 
             if search_result.get("full_content"):
                 response_text += f"\n**Full Content:**\n{search_result['full_content']}\n"
@@ -107,7 +114,9 @@ def register_tool(mcp: FastMCP, web_search_service: WebSearchService) -> None:
         for i, summary in enumerate(result["results"], 1):
             response_text += f"**{i}. {summary['title']}**\n"
             response_text += f"URL: {summary['url']}\n"
-            response_text += f"Description: {summary['description']}\n\n---\n\n"
+            response_text += f"Description: {summary['description']}\n"
+            response_text += engines_line(summary)
+            response_text += "\n---\n\n"
 
         logger.info(
             f"MCP tool get_web_search_summaries completed: {result['total_results']} results"

@@ -21,7 +21,7 @@ describe parallel fusion. The decision log notes the new `Engines:` text line.
 
 ### 1. Tool output
 
-- [ ] 1.1 In `tool.py`, add `Engines: <labels>` after `Description:` in `full_web_search` and
+- [x] 1.1 In `tool.py`, add `Engines: <labels>` after `Description:` in `full_web_search` and
   `get_web_search_summaries`. Read the list with `.get("engines")` and omit the line when it is
   empty or missing (R10). Verify:
   - tests in `tests/test_tools.py` assert the line for both tools, with `FakeService` updated to
