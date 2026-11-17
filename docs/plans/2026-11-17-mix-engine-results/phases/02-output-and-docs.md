@@ -35,7 +35,7 @@ describe parallel fusion. The decision log notes the new `Engines:` text line.
   under Returns, and say that results are merged from several engines (R10). Verify: the tests in
   `tests/test_tools.py` still pass. Read both files and confirm that nothing says only one engine
   is used.
-- [ ] 2.2 Update the README and `.env.example` (D7):
+- [x] 2.2 Update the README and `.env.example` (D7):
   - rewrite the README's "Multi-Engine Architecture" section for parallel fusion and the fallback;
   - replace "intelligent backend selection" (README lines 3 and 80);
   - add `ENGINE_TIMEOUT_SECONDS` to the README config block and `.env.example`;
