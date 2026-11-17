@@ -2,8 +2,9 @@
 Search engines
 
 Each engine turns a query and SearchFilters into SearchResults. The service
-tries them in order: Brave Search API (when a key is configured), the ddgs
-metasearch library, then scraping search.brave.com and DuckDuckGo HTML.
+queries the Brave Search API (when a key is configured), the ddgs metasearch
+library and DuckDuckGo HTML in parallel, and scrapes search.brave.com in the
+browser only as a fallback. An engine that can't handle a source returns [].
 """
 
 import asyncio

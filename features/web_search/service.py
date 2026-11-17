@@ -1,12 +1,15 @@
 """
 Web Search Service
 
-Runs the search engines in order of preference and extracts page content.
+Queries the cheap search engines in parallel, fuses their ranked results with
+reciprocal rank fusion, falls back to the browser engine when results are
+short, and extracts page content.
 """
 
 import asyncio
 import logging
-from typing import Any, Dict, List, Optional, Sequence
+import time
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import httpx
 from fake_useragent import UserAgent
@@ -23,28 +26,15 @@ from .engines import (
 )
 from .extraction import ContentExtractor
 from .filters import SearchFilters
+from .fusion import fuse_results
 from .models import SearchResult
 from .url_safety import URLGuard
 
 logger = logging.getLogger(__name__)
 
-QUALITY_THRESHOLD = 0.3
 HTTP_TIMEOUT_SECONDS = 15.0
+FALLBACK_TIMEOUT_SECONDS = 30.0
 PREVIEW_CHARS = 500
-
-
-def assess_result_quality(results: List[SearchResult], query: str) -> float:
-    """Average share of query words found in each result's title or description (0.0 to 1.0)"""
-    query_words = set(query.lower().split())
-    if not results or not query_words:
-        return 0.0
-
-    total_score = 0.0
-    for result in results:
-        result_words = set(result.title.lower().split()) | set(result.description.lower().split())
-        total_score += len(query_words & result_words) / len(query_words)
-
-    return min(total_score / len(results), 1.0)
 
 
 class WebSearchService:
@@ -56,15 +46,20 @@ class WebSearchService:
         http_client: Optional[httpx.AsyncClient] = None,
         browser: Optional[BrowserManager] = None,
         engines: Optional[Sequence[SearchEngine]] = None,
+        fallback_engine: Optional[SearchEngine] = None,
     ):
         """
         Args:
             config: Web search configuration (read from the environment if omitted)
-            guard, http_client, browser, engines: Overrides, for tests
+            guard, http_client, browser: Overrides, for tests
+            engines: Engines queried in parallel, for tests
+            fallback_engine: Engine used when results are short, for tests. When
+                engines is given and this is omitted, there is no fallback.
         """
         config = config or WebSearchConfig()
         self.max_content_length = config.max_content_length
         self.max_concurrent_requests = config.max_concurrent_requests
+        self.engine_timeout = config.engine_timeout_seconds
         self._ua = UserAgent()
 
         self.guard = guard or URLGuard(allow_private=config.allow_private_urls)
@@ -77,20 +72,25 @@ class WebSearchService:
         self.extractor = ContentExtractor(
             self.http_client, self.browser, self.guard, self._random_user_agent
         )
-        self.engines: List[SearchEngine] = (
-            list(engines) if engines is not None else self._build_engines(config)
-        )
+        self.engines: List[SearchEngine]
+        self.fallback_engine: Optional[SearchEngine]
+        if engines is None:
+            self.engines = self._build_engines(config)
+            self.fallback_engine = fallback_engine or BraveBrowserEngine(self.browser)
+        else:
+            self.engines = list(engines)
+            self.fallback_engine = fallback_engine
 
     def _random_user_agent(self) -> str:
         return self._ua.random
 
     def _build_engines(self, config: WebSearchConfig) -> List[SearchEngine]:
+        """The cheap engines, queried in parallel on every search"""
         engines: List[SearchEngine] = []
         if config.brave_api_key:
             engines.append(BraveApiEngine(config.brave_api_key, self.http_client))
         engines += [
             DdgsEngine(config.ddgs_backend),
-            BraveBrowserEngine(self.browser),
             DuckDuckGoHtmlEngine(self.http_client, self._random_user_agent),
         ]
         return engines
@@ -131,6 +131,7 @@ class WebSearchService:
                     "url": r.url,
                     "description": r.description,
                     "timestamp": r.timestamp,
+                    "engines": r.engines,
                 }
                 for r in results
             ],
@@ -155,39 +156,53 @@ class WebSearchService:
 
     async def _multi_engine_search(self, query: str, filters: SearchFilters) -> List[SearchResult]:
         """
-        Try each engine in order and return the first result set that passes the
-        quality threshold, or else the best non-empty one
+        Query the cheap engines in parallel and fuse their results; run the
+        fallback engine only when fewer than filters.limit results come back
         """
-        best_results: List[SearchResult] = []
-        best_score = -1.0
-        best_engine = None
-
-        for engine in self.engines:
-            try:
-                logger.info(f"Trying {engine.name} search engine")
-                results = await engine.search(query, filters)
-            except Exception as e:
-                logger.warning(f"Search engine {engine.name} failed: {e}")
-                continue
-
-            if not results:
-                continue
-
-            score = assess_result_quality(results, query)
-            if score >= QUALITY_THRESHOLD:
-                logger.info(f"Using results from {engine.name}: {len(results)} results")
-                return results[: filters.limit]
-            if score > best_score:
-                best_results, best_score, best_engine = results, score, engine.name
-
-        if best_results:
-            logger.info(
-                f"No engine met the quality threshold; using {best_engine} (score {best_score:.2f})"
+        lists = list(
+            await asyncio.gather(
+                *[
+                    self._run_engine(engine, query, filters, self.engine_timeout)
+                    for engine in self.engines
+                ]
             )
-            return best_results[: filters.limit]
+        )
+        merged = fuse_results(lists)
 
-        logger.warning("All search engines failed, returning empty results")
-        return []
+        if len(merged) < filters.limit and self.fallback_engine is not None:
+            logger.info(
+                f"{len(merged)} of {filters.limit} results; trying {self.fallback_engine.name}"
+            )
+            lists.append(
+                await self._run_engine(
+                    self.fallback_engine, query, filters, FALLBACK_TIMEOUT_SECONDS
+                )
+            )
+            merged = fuse_results(lists)
+
+        if not merged:
+            logger.warning("All search engines failed or returned nothing")
+        return merged[: filters.limit]
+
+    @staticmethod
+    async def _run_engine(
+        engine: SearchEngine, query: str, filters: SearchFilters, timeout: float
+    ) -> Tuple[str, List[SearchResult]]:
+        """Run one engine under a timeout; failures are logged and give no results"""
+        start = time.monotonic()
+        try:
+            results = await asyncio.wait_for(engine.search(query, filters), timeout)
+        except TimeoutError:
+            logger.warning(f"Search engine {engine.name} timed out after {timeout:g}s")
+            return engine.name, []
+        except Exception as e:
+            logger.warning(f"Search engine {engine.name} failed: {e!r}")
+            return engine.name, []
+        logger.info(
+            f"Search engine {engine.name}: {len(results)} results "
+            f"in {time.monotonic() - start:.2f}s"
+        )
+        return engine.name, results
 
     async def _extract_content_concurrent(
         self, results: List[SearchResult], max_content_length: Optional[int]

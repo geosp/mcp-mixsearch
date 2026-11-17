@@ -40,15 +40,15 @@ offline.
 
 ### 3. Service
 
-- [ ] 3.1 Add `engine_timeout_seconds: float = 10.0` to `WebSearchConfig` and list
+- [x] 3.1 Add `engine_timeout_seconds: float = 10.0` to `WebSearchConfig` and list
   `ENGINE_TIMEOUT_SECONDS` in its docstring (D7). Verify: `ENGINE_TIMEOUT_SECONDS=2` in the
   environment gives `2.0`.
-- [ ] 3.2 Split `_build_engines` into cheap `engines` and `fallback_engine`. Add a
+- [x] 3.2 Split `_build_engines` into cheap `engines` and `fallback_engine`. Add a
   `fallback_engine` override to `WebSearchService.__init__`. When `engines=` is passed without it,
   there is no fallback (D5). Verify: an updated `test_engine_order_depends_on_brave_api_key`
   asserts `engines` are `[BraveAPI?, DDGS, DuckDuckGo]` and the fallback is `Brave`. A service
   built with only `engines=` has no fallback.
-- [ ] 3.3 Rewrite `_multi_engine_search` and its tests together (R1, R2, R3, R6, R7, R9, R11, R12,
+- [x] 3.3 Rewrite `_multi_engine_search` and its tests together (R1, R2, R3, R6, R7, R9, R11, R12,
   D4, D5, D6):
   - Service:
     - Gather the cheap engines with a per-engine `wait_for`, a warning for each failure or timeout,
@@ -75,7 +75,7 @@ offline.
     - Each engine receives the same `SearchFilters` object (R9).
 
   Verify: `uv run pytest`.
-- [ ] 3.4 Update the module docstrings in `service.py` and `engines.py`, which still describe the
+- [x] 3.4 Update the module docstrings in `service.py` and `engines.py`, which still describe the
   sequential order. Verify: `grep -n "in order\|tries them" features/web_search/*.py` finds nothing
   stale.
 
