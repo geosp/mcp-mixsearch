@@ -1,11 +1,11 @@
 ---
 title: Mix results from several search engines
-status: implemented
+status: closed
 created: 2026-11-17
 updated: 2026-11-17
 design_review: { status: passed, rounds: 1, last: 2026-11-17 }
 approved: 2026-11-17
-adr_review: null
+adr_review: 2026-11-17
 ---
 
 # Mix results from several search engines

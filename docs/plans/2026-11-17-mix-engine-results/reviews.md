@@ -80,3 +80,7 @@ Raw report: docs/reviews/2026-11-17-mix-engine-results/raw/impl-review-02-r1-con
 
 ## 2026-11-17 · done · phase 02
 No manual check: the behavior is text formatting, exercised through a real FastMCP client in tests/test_tools.py; the owner agreed.
+
+## 2026-11-17 · ADR review
+ADRs in force reviewed: none (no ADRs existed).
+Created: ADR-0001, docs/adrs/0001-fuse-parallel-engines-with-rrf.md (D1, D4, D5, R6/R10 output contract). Other decisions (D2, D3, D6, D7, D8) are tactical and stay in the plan.
