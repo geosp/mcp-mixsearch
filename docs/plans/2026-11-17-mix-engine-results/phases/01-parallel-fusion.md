@@ -34,7 +34,7 @@ offline.
 
 ### 2. Engines
 
-- [ ] 2.1 `DuckDuckGoHtmlEngine` and `BraveBrowserEngine` return `[]` for a source other than `web`,
+- [x] 2.1 `DuckDuckGoHtmlEngine` and `BraveBrowserEngine` return `[]` for a source other than `web`,
   before any request or page load (R8). Verify: tests in `tests/test_engines.py` for `news`,
   `images` and `videos` assert no HTTP call and no page opened.
 

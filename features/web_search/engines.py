@@ -155,6 +155,9 @@ class BraveBrowserEngine:
         self._browser = browser
 
     async def search(self, query: str, filters: SearchFilters) -> List[SearchResult]:
+        if filters.source != "web":
+            return []  # The results page only lists web results
+
         url = f"{self.SEARCH_URL}?{urlencode({'q': query, 'spellcheck': '1', **filters.brave_web_params()})}"
         logger.info(f"Browser-based Brave search URL: {url}")
 
@@ -215,6 +218,9 @@ class DuckDuckGoHtmlEngine:
         self._user_agent = user_agent
 
     async def search(self, query: str, filters: SearchFilters) -> List[SearchResult]:
+        if filters.source != "web":
+            return []  # The HTML page only lists web results
+
         response = await self._http.get(
             self.SEARCH_URL,
             params={"q": query, **filters.ddg_html_params()},
