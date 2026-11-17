@@ -232,3 +232,21 @@ async def test_brave_browser_engine_drops_brave_links():
 
 def test_strip_tags():
     assert strip_tags("<b>A</b> &amp; <i>B</i>") == "A & B"
+
+
+@pytest.mark.parametrize("source", ["news", "images", "videos"])
+async def test_scraping_engines_answer_web_only(guard, source):
+    requests = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, text="")
+
+    browser = FakeBrowser()
+    async with mock_client(handler, guard) as client:
+        filters = SearchFilters(source=source)
+        assert await DuckDuckGoHtmlEngine(client, lambda: "ua").search("q", filters) == []
+        assert await BraveBrowserEngine(browser).search("q", filters) == []
+
+    assert requests == []
+    assert browser.pages_opened == 0

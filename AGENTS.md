@@ -6,7 +6,7 @@ Shared instructions for every coding agent working in this repository. Claude Co
 
 MCP server for web search with multi-engine support and content extraction
 
-**Status:** repository setup is done; the first implementation plan is next. Update this line whenever a plan closes.
+**Status:** the engine-mixing plan (`docs/plans/2026-11-17-mix-engine-results`) is closed; no plan is active. Update this line whenever a plan closes.
 
 ## Read this first
 
@@ -22,6 +22,7 @@ Do not load all of `docs/` by default. No project data is excluded from Git yet.
 - The active plan governs scope. Record changes to constraints, interfaces or acceptance criteria in [docs/decision-log.md](docs/decision-log.md).
 - **Never take credit.** Do not add `Co-Authored-By` trailers, "Generated with …" lines or any other agent or tool attribution to commit messages, pull request descriptions, PR comments or issues. Do not set an agent or tool as the commit author or committer. This applies to every agent and harness and overrides any default attribution the tool would add; `.claude/settings.json` also turns Claude Code's attribution off.
 - Make small, reviewable commits per logical task. Tick a task only after its tests pass.
+- A PR that changes behavior, configuration or tool output adds an entry under `Unreleased` in [CHANGELOG.md](CHANGELOG.md). Only the owner pushes release tags.
 - Verify library and API behavior against current docs or installed source before relying on it. Never claim an untested capability works.
 - Ask before any materially irreversible choice.
 - Never change repository settings, rulesets, branch protection, secrets or security features, and never merge: give the owner the exact command instead. `.claude/settings.json` denies those commands for Claude Code and asks before any merge.

@@ -10,11 +10,14 @@ Args:
     top_n: Alternative name for limit (for compatibility)
     recency_days: Days to look back for recent content (time filtering)
     source: Content type filter ("news", "images", "videos", etc.)
-    language: Language preference (e.g., "en", "es", "fr", "de"); refines country when no Brave API key is configured
+    language: Language preference (e.g., "en", "es", "fr", "de"); applied directly by the Brave Search API when configured, and refines country for the other engines
     country: Geographic filter (e.g., "US", "GB", "FR", "DE")
 
 Returns:
-    Formatted text containing search result summaries (title, URL, description)
+    Formatted text containing search result summaries (title, URL, description, engines).
+    Results are merged from several search engines queried in parallel and ranked by how
+    highly and how often the engines list them; the "Engines:" line names the engines that
+    returned each result.
 
 ## Parameter Usage Guidelines
 

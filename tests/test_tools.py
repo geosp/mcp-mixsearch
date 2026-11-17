@@ -29,6 +29,7 @@ class FakeService:
                     "full_content": "Body of A",
                     "fetch_status": "success",
                     "error": None,
+                    "engines": ["BraveAPI", "DDGS"],
                 },
                 {
                     "title": "Broken",
@@ -52,6 +53,13 @@ class FakeService:
                     "title": "Summary",
                     "url": "https://s.example",
                     "description": "S",
+                    "timestamp": "t",
+                    "engines": ["DDGS", "DuckDuckGo"],
+                },
+                {
+                    "title": "No engines key",
+                    "url": "https://n.example",
+                    "description": "N",
                     "timestamp": "t",
                 },
             ],
@@ -109,7 +117,9 @@ async def test_full_web_search_formats_results_and_errors(client, service):
 
     text = result.content[0].text
     assert text.startswith("Search completed for 'q' with 2 results")
-    assert "**1. Good**\nURL: https://a.example" in text
+    assert "**1. Good**\nURL: https://a.example\nDescription: A\nEngines: BraveAPI, DDGS\n" in text
+    assert "**2. Broken**\nURL: https://b.example\nDescription: B\n\n" in text
+    assert text.count("Engines:") == 1
     assert "**Full Content:**\nBody of A" in text
     assert "**Content Extraction Failed:** timeout" in text
 
@@ -129,7 +139,12 @@ async def test_summaries_top_n_and_filters(client, service):
         },
     )
 
-    assert "**1. Summary**\nURL: https://s.example\nDescription: S" in result.content[0].text
+    text = result.content[0].text
+    assert (
+        "**1. Summary**\nURL: https://s.example\nDescription: S\nEngines: DDGS, DuckDuckGo\n\n"
+        in text
+    )
+    assert "**2. No engines key**\nURL: https://n.example\nDescription: N\n\n---" in text
     filters = service.calls[0][2]
     assert (filters.limit, filters.source, filters.country, filters.language) == (
         3,
