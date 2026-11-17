@@ -5,4 +5,4 @@ ADRs record decisions that should outlive the plan that made them. `impl-plan` p
 - Never edit an accepted ADR. A changed decision gets a new ADR that supersedes it.
 - Smaller decisions, and decisions made outside a plan, go in the [decision log](../decision-log.md).
 
-There are no ADRs yet.
+- [ADR-0001](0001-fuse-parallel-engines-with-rrf.md): search fuses parallel engines with reciprocal rank fusion.

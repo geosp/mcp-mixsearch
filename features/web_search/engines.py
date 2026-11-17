@@ -2,8 +2,9 @@
 Search engines
 
 Each engine turns a query and SearchFilters into SearchResults. The service
-tries them in order: Brave Search API (when a key is configured), the ddgs
-metasearch library, then scraping search.brave.com and DuckDuckGo HTML.
+queries the Brave Search API (when a key is configured), the ddgs metasearch
+library and DuckDuckGo HTML in parallel, and scrapes search.brave.com in the
+browser only as a fallback. An engine that can't handle a source returns [].
 """
 
 import asyncio
@@ -155,6 +156,9 @@ class BraveBrowserEngine:
         self._browser = browser
 
     async def search(self, query: str, filters: SearchFilters) -> List[SearchResult]:
+        if filters.source != "web":
+            return []  # The results page only lists web results
+
         url = f"{self.SEARCH_URL}?{urlencode({'q': query, 'spellcheck': '1', **filters.brave_web_params()})}"
         logger.info(f"Browser-based Brave search URL: {url}")
 
@@ -215,6 +219,9 @@ class DuckDuckGoHtmlEngine:
         self._user_agent = user_agent
 
     async def search(self, query: str, filters: SearchFilters) -> List[SearchResult]:
+        if filters.source != "web":
+            return []  # The HTML page only lists web results
+
         response = await self._http.get(
             self.SEARCH_URL,
             params={"q": query, **filters.ddg_html_params()},

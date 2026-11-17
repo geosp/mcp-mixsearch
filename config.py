@@ -17,7 +17,7 @@ class WebSearchConfig(BaseSettings):
     Web search configuration
 
     Environment variables: BRAVE_API_KEY, MAX_CONTENT_LENGTH, MAX_CONCURRENT_REQUESTS,
-    ALLOW_PRIVATE_URLS, DDGS_BACKEND
+    ALLOW_PRIVATE_URLS, DDGS_BACKEND, ENGINE_TIMEOUT_SECONDS
     """
 
     model_config = SettingsConfigDict(extra="ignore")
@@ -35,6 +35,9 @@ class WebSearchConfig(BaseSettings):
     )
     ddgs_backend: str = Field(
         default="auto", description="ddgs backend(s), e.g. 'auto' or 'duckduckgo,bing'"
+    )
+    engine_timeout_seconds: float = Field(
+        default=10.0, gt=0, description="Seconds to wait for each search engine queried in parallel"
     )
 
 

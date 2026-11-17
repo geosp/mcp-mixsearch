@@ -1,15 +1,15 @@
 # MCP MixSearch
 
-A comprehensive Model Context Protocol (MCP) server for advanced web search functionality with multi-engine support and intelligent backend selection.
+A comprehensive Model Context Protocol (MCP) server for advanced web search functionality that merges results from several search engines.
 
 ## Features
 
-- **Multi-Engine Search**: The official Brave Search API (with a key) and the DDGS metasearch library, with browser-scraping fallbacks
+- **Multi-Engine Search**: Queries the official Brave Search API (with a key), the DDGS metasearch library and DuckDuckGo in parallel and merges their results, with a browser-scraping fallback
 - **Advanced Filtering**: Time-based, geographic, language, and content type filtering
 - **Full Content Extraction**: Main-content extraction with [trafilatura](https://trafilatura.readthedocs.io), rendering JavaScript pages in a shared headless Firefox when needed
 - **Safe Fetching**: Only public http(s) URLs are fetched (see [Security](#security))
 - **Two Transports**: MCP over stdio or streamable HTTP, built on [mcp-service-kit](https://github.com/geosp/mcp-service-kit)
-- **Graceful Fallbacks**: Browser-based search for reliability when APIs fail
+- **Graceful Fallbacks**: A failing or slow engine is skipped; browser-based search fills in when too few results come back
 
 ## Quick Start
 
@@ -42,6 +42,7 @@ BRAVE_API_KEY=your_brave_api_key_here  # optional: enables the Brave Search API 
 MAX_CONTENT_LENGTH=500000              # default per-page content limit (characters)
 MAX_CONCURRENT_REQUESTS=5              # concurrent page extractions
 DDGS_BACKEND=auto                      # ddgs backend(s), e.g. auto or duckduckgo,bing
+ENGINE_TIMEOUT_SECONDS=10              # per-engine timeout for the engines queried in parallel
 ALLOW_PRIVATE_URLS=false               # true allows private/loopback URLs (trusted networks only)
 ```
 
@@ -77,7 +78,7 @@ Run `uv run mcp-mixsearch --help` for all options, including `--log-level`.
 
 1. **full_web_search**
    - Comprehensive web search with content extraction
-   - Multi-engine search with intelligent backend selection
+   - Results merged from several engines, each listing the engines that returned it
    - **Advanced filtering**: time, language, geographic, content type filters
    - Args: query, limit (1-10), include_content, max_content_length, top_n, recency_days, source, language, country
 
@@ -93,13 +94,22 @@ Run `uv run mcp-mixsearch --help` for all options, including `--log-level`.
 ## Advanced Search Features
 
 ### Multi-Engine Architecture
-Engines are tried in order. The first result set whose titles and descriptions match the query
-well enough is used; if none does, the best one found is returned.
+The cheap engines are queried in parallel, each with its own timeout (`ENGINE_TIMEOUT_SECONDS`,
+10 s by default). An engine that fails or times out is logged and skipped:
 
-1. **Brave Search API**: only when `BRAVE_API_KEY` is set (web and news)
-2. **DDGS**: metasearch library, `backend` from `DDGS_BACKEND` (`auto` by default)
-3. **Brave (browser)**: scrapes search.brave.com in headless Firefox
-4. **DuckDuckGo (HTML)**: scrapes the DuckDuckGo HTML results page
+- **Brave Search API** (`BraveAPI`): only when `BRAVE_API_KEY` is set (web and news)
+- **DDGS**: metasearch library, `backend` from `DDGS_BACKEND` (`auto` by default)
+- **DuckDuckGo (HTML)** (`DuckDuckGo`): scrapes the DuckDuckGo HTML results page (web only)
+
+Their ranked lists are merged with reciprocal rank fusion: a result scores `1 / (60 + rank)` for
+each engine that lists it, so results that several engines rank highly come first. Duplicates are
+merged by normalized URL (scheme and host case, `www.`, tracking parameters such as `utm_*`,
+fragments and a trailing slash are ignored), and each result lists the engines that returned it,
+for example `Engines: BraveAPI, DDGS`.
+
+When fewer results than `limit` come back for a web search, **Brave (browser)** (`Brave`) scrapes
+search.brave.com in headless Firefox as a fallback, with a 30 s timeout, and its results are
+merged in.
 
 Page content is fetched over HTTP and extracted with trafilatura. Pages that need JavaScript
 or return a bot check are rendered in one shared headless Firefox, with a new browser context
@@ -146,6 +156,7 @@ mcp-mixsearch/
 │       ├── __init__.py
 │       ├── service.py    # Orchestrates engines and content extraction
 │       ├── engines.py    # Brave API, DDGS, Brave and DuckDuckGo scraping engines
+│       ├── fusion.py     # URL normalization and reciprocal rank fusion
 │       ├── extraction.py # HTTP + trafilatura extraction with browser fallback
 │       ├── browser.py    # Shared headless Firefox
 │       ├── filters.py    # Normalized search filters and per-engine parameters
