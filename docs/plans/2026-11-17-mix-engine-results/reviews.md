@@ -61,3 +61,6 @@ Raw report: docs/reviews/2026-11-17-mix-engine-results/raw/impl-review-01-r1-con
 | I12 | Nit | contract | D4: an engine-raised builtin TimeoutError is logged as "timed out" | accepted: no current engine library raises builtin TimeoutError |
 | I13 | Nit | contract | R7/R8: fallback "runs" and logs for non-web short searches though it returns [] at once | fixed: test_fallback_skipped_for_non_web_sources; service.py; D5 + plan Decision log |
 | I14 | Nit | contract | README still says engines are tried in order (phase 02 scope) | accepted: phase 02 task 2.2 |
+
+## 2026-11-17 · done · phase 01
+Manual check: docs/demos/2026-11-17-mix-engine-results-p1/README.md (owner ran `uv run pytest -m live`: 3 passed, 1 skipped for no BRAVE_API_KEY).
