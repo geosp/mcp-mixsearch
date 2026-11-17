@@ -4,8 +4,8 @@ title: Parallel engines with rank fusion
 status: draft
 branch: null
 base: null
-delivers: [R1, R2, R3, R4, R5, R6, R7, R8, R9, R11]
-design_review: { status: changes-requested, rounds: 1, last: 2026-11-17 }
+delivers: [R1, R2, R3, R4, R5, R6, R7, R8, R9, R11, R12]
+design_review: { status: passed, rounds: 1, last: 2026-11-17 }
 impl_review: { status: none, rounds: 0, last: null }
 approved: null
 ---
@@ -40,23 +40,51 @@ offline.
 
 ### 3. Service
 
-- [ ] 3.1 Add `engine_timeout_seconds: float = 10.0` to `WebSearchConfig` (D7). Verify:
-  `ENGINE_TIMEOUT_SECONDS=2` in the environment gives `2.0`.
-- [ ] 3.2 Split `_build_engines` into cheap `engines` and `fallback_engine`, and add a
-  `fallback_engine` override to `WebSearchService.__init__` (D5). Verify: an updated
-  `test_engine_order_depends_on_brave_api_key` asserts `engines` are `[BraveAPI?, DDGS, DuckDuckGo]`
-  and the fallback is `Brave`.
-- [ ] 3.3 Rewrite `_multi_engine_search`: gather the cheap engines with per-engine `wait_for` and
-  logging (D4), fuse them, run the fallback with a 30 s timeout only when there are fewer than
-  `limit` results, fuse again and cut to `limit`. Remove `assess_result_quality` and
-  `QUALITY_THRESHOLD` (R1, R2, R3, R7, D5, D6). Verify: the tests in 3.4 pass.
-- [ ] 3.4 Replace the selection tests in `tests/test_service.py` with stubbed-engine tests:
-  overlapping results merged in RRF order with no duplicate URLs; a raising engine and a slow
-  engine (timeout set to 0.05 s) are logged and skipped, checked with `caplog`; engines run
-  concurrently (three 0.2 s engines finish in under 0.5 s); the fallback is not called at `limit`
-  results but is called below it, and its failure is tolerated; all engines failing gives zero
-  results; `search_summaries` dicts include `engines`; filters reach each engine unchanged (R9)
-  (R1–R7, R9, R11). Verify: `uv run pytest`.
-- [ ] 3.5 Update the module docstrings in `service.py` and `engines.py`, which still describe the
-  sequential order. Verify: run the AGENTS.md checks (`ruff check`, `ruff format --check`, `mypy`,
-  `pytest`, `sync_agents.py --check`). All pass.
+- [ ] 3.1 Add `engine_timeout_seconds: float = 10.0` to `WebSearchConfig` and list
+  `ENGINE_TIMEOUT_SECONDS` in its docstring (D7). Verify: `ENGINE_TIMEOUT_SECONDS=2` in the
+  environment gives `2.0`.
+- [ ] 3.2 Split `_build_engines` into cheap `engines` and `fallback_engine`. Add a
+  `fallback_engine` override to `WebSearchService.__init__`. When `engines=` is passed without it,
+  there is no fallback (D5). Verify: an updated `test_engine_order_depends_on_brave_api_key`
+  asserts `engines` are `[BraveAPI?, DDGS, DuckDuckGo]` and the fallback is `Brave`. A service
+  built with only `engines=` has no fallback.
+- [ ] 3.3 Rewrite `_multi_engine_search` and its tests together (R1, R2, R3, R6, R7, R9, R11, R12,
+  D4, D5, D6):
+  - Service:
+    - Gather the cheap engines with a per-engine `wait_for`, a warning for each failure or timeout,
+      and an info log of count and duration (D4).
+    - Fuse the lists. Run the fallback only when there are fewer than `limit` results, under a
+      module constant `FALLBACK_TIMEOUT_SECONDS = 30.0`, then fuse again and cut to `limit`.
+    - Add `"engines"` to the dicts that `search_summaries` builds by hand.
+    - Remove `assess_result_quality` and `QUALITY_THRESHOLD`.
+  - Tests in `tests/test_service.py`:
+    - Remove `test_assess_result_quality`, its import, `test_first_good_engine_wins` and
+      `test_best_effort_results_when_no_engine_meets_threshold`.
+    - Make `result()` give each result its own URL (no shared default), so that
+      `test_results_are_limited` still tests the limit under dedupe.
+    - Let `make_service` accept a config and a `fallback_engine`.
+  - New stubbed-engine tests:
+    - Overlapping results are merged in RRF order with no duplicate URLs.
+    - A raising engine and a slow engine (timeout 0.05 s) are skipped, and `caplog` shows the
+      warnings.
+    - Three 0.2 s engines finish in under 0.5 s.
+    - The fallback isn't called at `limit` results, but is called below it.
+    - A raising fallback, and a fallback past a monkeypatched timeout, are tolerated (R12).
+    - All engines failing gives zero results.
+    - `search_summaries` dicts include `engines`.
+    - Each engine receives the same `SearchFilters` object (R9).
+
+  Verify: `uv run pytest`.
+- [ ] 3.4 Update the module docstrings in `service.py` and `engines.py`, which still describe the
+  sequential order. Verify: `grep -n "in order\|tries them" features/web_search/*.py` finds nothing
+  stale.
+
+### 4. Record and check
+
+- [ ] 4.1 Add two lines to `docs/decision-log.md`:
+  - Search results are fused from several engines by RRF, and each result gains an `engines`
+    list. Existing fields are unchanged.
+  - DuckDuckGo HTML and the Brave browser engine answer `web` searches only.
+
+  Then run the AGENTS.md checks (`uv sync --locked`, `ruff check`, `ruff format --check`, `mypy`,
+  `pytest`, `sync_agents.py --check`). Verify: the lines are present and every check passes.

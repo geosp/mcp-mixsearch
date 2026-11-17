@@ -71,8 +71,10 @@ async def _run(engine, timeout):
 - Cancelling `BraveApiEngine` and `DuckDuckGoHtmlEngine` cancels their httpx request cleanly.
 - `DdgsEngine` uses `asyncio.to_thread`. Cancellation stops the await, but the thread runs until
   ddgs returns. Its result is discarded.
-- Each engine also logs a count and duration at info level when it succeeds. This makes slow
-  engines visible in logs when tuning `ENGINE_TIMEOUT_SECONDS`.
+- Each engine also logs a count and duration at info level when it succeeds (task 01 3.3). This
+  makes slow engines visible in logs when tuning `ENGINE_TIMEOUT_SECONDS`.
+- The fallback uses the same wrapper with `FALLBACK_TIMEOUT_SECONDS` (30 s), a module constant
+  that tests monkeypatch.
 
 ## Current code, for reference
 
@@ -80,12 +82,34 @@ async def _run(engine, timeout):
   `assess_result_quality` score of at least 0.3, or else the best-scoring list.
 - `_build_engines`: `[BraveAPI?] + [DDGS, Brave, DuckDuckGo]`. `tests/test_service.py`
   (`test_engine_order_depends_on_brave_api_key`) pins this order and will change.
-- `tests/test_service.py`: `test_first_good_engine_wins` and
-  `test_best_effort_results_when_no_engine_meets_threshold` test the old selection. They are
-  replaced, not kept.
+- `tests/test_service.py`:
+  - `test_first_good_engine_wins`, `test_best_effort_results_when_no_engine_meets_threshold` and
+    `test_assess_result_quality` (along with its import) test the old selection. They are
+    removed.
+  - The `result()` helper defaults every URL to `https://example.com/`. Deduplication would
+    collapse `test_results_are_limited` to one result, so each result needs its own URL.
+- `search_summaries` builds its result dicts by hand, so `engines` must be added there explicitly.
+- `tests/test_tools.py` `FakeService` returns dicts without `engines`, which is why `tool.py`
+  reads the list with `.get`.
 
 ## Rollback
 
 Reverting leaves `ENGINE_TIMEOUT_SECONDS` possibly set in a deployment's environment. That is
 harmless, because `WebSearchConfig` uses `extra="ignore"`. No client depends on `engines` yet, so
 dropping it breaks nothing.
+
+## Risks
+
+- **Latency:** today the loop returns at the first engine scoring at least 0.3
+  (`service.py` `_multi_engine_search`). With a Brave key, a typical search is one BraveAPI call;
+  without one, a single DDGS call. DDGS `auto` runs several providers in batches with its own
+  per-batch timeout (5 s by default), so it is likely the slowest cheap engine.
+- **Worst case today:** BraveAPI, DDGS and DuckDuckGo HTML can each take up to the 15 s HTTP
+  timeout, plus the browser engine's page load and 5 s network-idle wait.
+- **Request load:** DuckDuckGo HTML was last in the order and rarely reached. It is now called on
+  every web search.
+- **Threads:** the default executor has at least 5 workers (`min(32, cpu + 4)`). Content extraction
+  also uses it, through `asyncio.to_thread(html_to_text, …)` in `extraction.py`. A DDGS call holds
+  its thread until ddgs's internal pool finishes.
+- **Correlation:** ddgs's `auto` backend includes the duckduckgo and brave providers, so the same
+  underlying index can count more than once in RRF.
