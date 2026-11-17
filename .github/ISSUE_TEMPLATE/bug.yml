@@ -1,0 +1,40 @@
+name: Bug report
+description: Something does not behave as documented. Never report security problems here.
+title: "Bug: <short description>"
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Security problems must not be reported here.** Use the repository's Security tab, "Report a vulnerability", instead.
+
+        Do not attach secrets, or data this project keeps out of Git. Describe the input instead.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: The observed behavior, with the exact command, output or error message.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: The expected behavior, and where it is documented if it is.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      value: |
+        1.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Version or commit, OS and toolchain versions. Remove host names and paths you do not want public.
+    validations:
+      required: true
