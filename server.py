@@ -45,11 +45,13 @@ class MixSearchService(BaseService):
         @mcp.custom_route("/health", methods=["GET"])
         async def health(request: Request) -> JSONResponse:
             """Health check endpoint (HTTP transport only)"""
-            return JSONResponse({
-                "status": "healthy",
-                "service": self.get_service_name(),
-                "version": SERVICE_VERSION
-            })
+            return JSONResponse(
+                {
+                    "status": "healthy",
+                    "service": self.get_service_name(),
+                    "version": SERVICE_VERSION,
+                }
+            )
 
     def cleanup(self):
         """Cleanup resources"""

@@ -26,7 +26,10 @@ ARTICLE_HTML = f"""
     [
         ("too short", False),
         ("Please complete the CAPTCHA to continue. " * 5, False),
-        ("Access denied. You don't have permission to access this page on this server. " * 2, False),
+        (
+            "Access denied. You don't have permission to access this page on this server. " * 2,
+            False,
+        ),
         ("A long article that merely mentions a robot and a 403 status code. " * 40, True),
         ("A normal page about gardening, soil, water and the right time to plant. " * 3, True),
     ],
@@ -95,5 +98,7 @@ async def test_extract_redirect_to_private_does_not_fall_back_to_browser(guard):
 
     async with mock_client(handler, guard) as client:
         with pytest.raises(UnsafeURLError):
-            await ContentExtractor(client, browser, guard, lambda: "agent").extract("https://public.example/")
+            await ContentExtractor(client, browser, guard, lambda: "agent").extract(
+                "https://public.example/"
+            )
     assert browser.pages_opened == 0

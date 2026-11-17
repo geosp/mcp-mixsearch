@@ -95,9 +95,13 @@ class WebSearchService:
         ]
         return engines
 
-    async def search_and_extract(self, query: str, filters: SearchFilters,
-                                 include_content: bool = True,
-                                 max_content_length: Optional[int] = None) -> Dict[str, Any]:
+    async def search_and_extract(
+        self,
+        query: str,
+        filters: SearchFilters,
+        include_content: bool = True,
+        max_content_length: Optional[int] = None,
+    ) -> Dict[str, Any]:
         """Full web search with content extraction"""
         logger.info(f"Starting comprehensive web search for: '{query}' with {filters}")
 
@@ -110,7 +114,7 @@ class WebSearchService:
             "query": query,
             "results": [r.to_dict() for r in results],
             "total_results": len(results),
-            "status": "success"
+            "status": "success",
         }
 
     async def search_summaries(self, query: str, filters: SearchFilters) -> Dict[str, Any]:
@@ -126,11 +130,12 @@ class WebSearchService:
                     "title": r.title,
                     "url": r.url,
                     "description": r.description,
-                    "timestamp": r.timestamp
-                } for r in results
+                    "timestamp": r.timestamp,
+                }
+                for r in results
             ],
             "total_results": len(results),
-            "status": "success"
+            "status": "success",
         }
 
     async def extract_single_page(self, url: str, max_content_length: Optional[int] = None) -> str:
@@ -171,19 +176,22 @@ class WebSearchService:
             score = assess_result_quality(results, query)
             if score >= QUALITY_THRESHOLD:
                 logger.info(f"Using results from {engine.name}: {len(results)} results")
-                return results[:filters.limit]
+                return results[: filters.limit]
             if score > best_score:
                 best_results, best_score, best_engine = results, score, engine.name
 
         if best_results:
-            logger.info(f"No engine met the quality threshold; using {best_engine} (score {best_score:.2f})")
-            return best_results[:filters.limit]
+            logger.info(
+                f"No engine met the quality threshold; using {best_engine} (score {best_score:.2f})"
+            )
+            return best_results[: filters.limit]
 
         logger.warning("All search engines failed, returning empty results")
         return []
 
-    async def _extract_content_concurrent(self, results: List[SearchResult],
-                                          max_content_length: Optional[int]) -> None:
+    async def _extract_content_concurrent(
+        self, results: List[SearchResult], max_content_length: Optional[int]
+    ) -> None:
         """Extract content from multiple URLs concurrently"""
         semaphore = asyncio.Semaphore(self.max_concurrent_requests)
         max_length = max_content_length or self.max_content_length

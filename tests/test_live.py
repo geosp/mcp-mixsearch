@@ -24,7 +24,9 @@ async def service():
 
 
 async def test_search_summaries(service):
-    summaries = await service.search_summaries("python programming language", SearchFilters(limit=3))
+    summaries = await service.search_summaries(
+        "python programming language", SearchFilters(limit=3)
+    )
     assert summaries["total_results"] > 0
     assert all(r["url"].startswith("http") for r in summaries["results"])
 

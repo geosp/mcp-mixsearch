@@ -15,6 +15,7 @@ def utc_now_iso() -> str:
 @dataclass
 class SearchResult:
     """A single search result, optionally with extracted page content"""
+
     title: str
     url: str
     description: str

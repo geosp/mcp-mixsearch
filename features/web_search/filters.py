@@ -12,14 +12,27 @@ SOURCES = ("web", "news", "images", "videos")
 
 # DuckDuckGo regions are "<country>-<language>"; used when only a country is given
 _DEFAULT_REGION_LANGUAGE = {
-    "br": "pt", "cn": "zh", "de": "de", "es": "es", "fr": "fr", "it": "it", "jp": "jp",
-    "kr": "kr", "mx": "es", "nl": "nl", "pl": "pl", "pt": "pt", "ru": "ru", "se": "sv",
+    "br": "pt",
+    "cn": "zh",
+    "de": "de",
+    "es": "es",
+    "fr": "fr",
+    "it": "it",
+    "jp": "jp",
+    "kr": "kr",
+    "mx": "es",
+    "nl": "nl",
+    "pl": "pl",
+    "pt": "pt",
+    "ru": "ru",
+    "se": "sv",
 }
 
 
 @dataclass(frozen=True)
 class SearchFilters:
     """Normalized search filters"""
+
     limit: int = 5
     recency_days: Optional[int] = None
     source: str = "web"

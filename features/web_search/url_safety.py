@@ -71,7 +71,9 @@ class URLGuard:
         parts = urlsplit(url)
         scheme = parts.scheme.lower()
         if scheme not in ALLOWED_SCHEMES:
-            raise UnsafeURLError(f"scheme '{scheme or '(none)'}' is not allowed, only http and https")
+            raise UnsafeURLError(
+                f"scheme '{scheme or '(none)'}' is not allowed, only http and https"
+            )
 
         host = parts.hostname
         if not host:

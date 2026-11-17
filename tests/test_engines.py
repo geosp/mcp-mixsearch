@@ -18,10 +18,17 @@ from .conftest import FakeBrowser, FakePage, mock_client
 BRAVE_WEB_RESPONSE = {
     "web": {
         "results": [
-            {"title": "Model Context Protocol", "url": "https://modelcontextprotocol.io/",
-             "description": "The <strong>Model Context Protocol</strong> &amp; its spec"},
-            {"title": "MCP on GitHub", "url": "https://github.com/modelcontextprotocol",
-             "description": "Org", "age": "2 days ago"},
+            {
+                "title": "Model Context Protocol",
+                "url": "https://modelcontextprotocol.io/",
+                "description": "The <strong>Model Context Protocol</strong> &amp; its spec",
+            },
+            {
+                "title": "MCP on GitHub",
+                "url": "https://github.com/modelcontextprotocol",
+                "description": "Org",
+                "age": "2 days ago",
+            },
         ]
     }
 }
@@ -42,11 +49,17 @@ async def test_brave_api_web_search(guard):
 
     assert seen["url"].path == "/res/v1/web/search"
     assert dict(seen["url"].params) == {
-        "q": "model context protocol", "count": "2", "country": "US",
-        "search_lang": "en", "freshness": "pw",
+        "q": "model context protocol",
+        "count": "2",
+        "country": "US",
+        "search_lang": "en",
+        "freshness": "pw",
     }
     assert seen["token"] == "secret-key"
-    assert [r.url for r in results] == ["https://modelcontextprotocol.io/", "https://github.com/modelcontextprotocol"]
+    assert [r.url for r in results] == [
+        "https://modelcontextprotocol.io/",
+        "https://github.com/modelcontextprotocol",
+    ]
     assert results[0].description == "The Model Context Protocol & its spec"
     assert results[1].timestamp == "2 days ago"
 
@@ -54,8 +67,14 @@ async def test_brave_api_web_search(guard):
 async def test_brave_api_news_uses_news_endpoint(guard):
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path == "/res/v1/news/search"
-        return httpx.Response(200, json={"results": [{"title": "Headline", "url": "https://news.example/a",
-                                                      "description": "Story"}]})
+        return httpx.Response(
+            200,
+            json={
+                "results": [
+                    {"title": "Headline", "url": "https://news.example/a", "description": "Story"}
+                ]
+            },
+        )
 
     async with mock_client(handler, guard) as client:
         results = await BraveApiEngine("k", client).search("q", SearchFilters(source="news"))
@@ -80,13 +99,35 @@ async def test_brave_api_errors_raise(guard, status):
 @pytest.mark.parametrize(
     "method, item, url, description",
     [
-        ("text", {"title": "T", "href": "https://a.example", "body": "B"}, "https://a.example", "B"),
-        ("news", {"title": "T", "url": "https://n.example", "body": "B", "date": "2026-10-01"},
-         "https://n.example", "B"),
-        ("images", {"title": "T", "url": "https://page.example", "image": "https://img.example/1.png",
-                    "source": "Bing"}, "https://page.example", "Bing | https://img.example/1.png"),
-        ("videos", {"title": "T", "content": "https://video.example/v", "description": "D"},
-         "https://video.example/v", "D"),
+        (
+            "text",
+            {"title": "T", "href": "https://a.example", "body": "B"},
+            "https://a.example",
+            "B",
+        ),
+        (
+            "news",
+            {"title": "T", "url": "https://n.example", "body": "B", "date": "2026-10-01"},
+            "https://n.example",
+            "B",
+        ),
+        (
+            "images",
+            {
+                "title": "T",
+                "url": "https://page.example",
+                "image": "https://img.example/1.png",
+                "source": "Bing",
+            },
+            "https://page.example",
+            "Bing | https://img.example/1.png",
+        ),
+        (
+            "videos",
+            {"title": "T", "content": "https://video.example/v", "description": "D"},
+            "https://video.example/v",
+            "D",
+        ),
     ],
 )
 def test_convert_ddgs_result(method, item, url, description):
@@ -114,11 +155,15 @@ async def test_ddgs_engine_passes_real_ddgs_parameters():
     FakeDDGS.calls = []
     engine = DdgsEngine("auto", ddgs_factory=FakeDDGS)
 
-    await engine.search("climate", SearchFilters.from_tool_args(limit=3, recency_days=30, country="fr"))
+    await engine.search(
+        "climate", SearchFilters.from_tool_args(limit=3, recency_days=30, country="fr")
+    )
     news = await engine.search("headlines", SearchFilters(source="news"))
 
     assert FakeDDGS.calls[0] == (
-        "text", "climate", {"max_results": 3, "backend": "auto", "timelimit": "m", "region": "fr-fr"}
+        "text",
+        "climate",
+        {"max_results": 3, "backend": "auto", "timelimit": "m", "region": "fr-fr"},
     )
     assert FakeDDGS.calls[1][0] == "news"
     assert news[0].url == "https://n.example"
@@ -157,19 +202,29 @@ async def test_duckduckgo_html_engine(guard):
 
     async with mock_client(handler, guard) as client:
         engine = DuckDuckGoHtmlEngine(client, lambda: "test-agent")
-        results = await engine.search("test", SearchFilters.from_tool_args(recency_days=7, country="us"))
+        results = await engine.search(
+            "test", SearchFilters.from_tool_args(recency_days=7, country="us")
+        )
     assert len(results) == 2
 
 
 async def test_brave_browser_engine_drops_brave_links():
-    page = FakePage(evaluate_result=[
-        {"title": "Elaborate", "url": "https://search.brave.com/ask?q=elaborate", "description": "AI"},
-        {"title": "Real", "url": "https://example.com/real", "description": "Real result"},
-        {"title": "Brave home", "url": "https://brave.com/", "description": "Brave"},
-    ])
+    page = FakePage(
+        evaluate_result=[
+            {
+                "title": "Elaborate",
+                "url": "https://search.brave.com/ask?q=elaborate",
+                "description": "AI",
+            },
+            {"title": "Real", "url": "https://example.com/real", "description": "Real result"},
+            {"title": "Brave home", "url": "https://brave.com/", "description": "Brave"},
+        ]
+    )
     engine = BraveBrowserEngine(FakeBrowser(page))
 
-    results = await engine.search("query", SearchFilters.from_tool_args(country="fr", recency_days=1))
+    results = await engine.search(
+        "query", SearchFilters.from_tool_args(country="fr", recency_days=1)
+    )
 
     assert [r.url for r in results] == ["https://example.com/real"]
     assert "country=FR" in page.visited[0] and "tf=d" in page.visited[0]
