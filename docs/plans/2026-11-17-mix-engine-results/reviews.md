@@ -39,3 +39,25 @@ Raw reports: docs/reviews/2026-11-17-mix-engine-results/raw/design-review-01-*.m
 | F30 | Nit | fresh reader | Links' decision-log vs plan's Decision log not distinguished | fixed: Links |
 
 ## 2026-11-17 · approved · whole plan (phases 01, 02)
+
+## 2026-11-17 · impl-review · phase 01 · round 1 · passed
+Diff: aa0407cd3bc4a6ead460697ed6216f60c3142fb3..4f7d578b94c92400a468a1cb26b8e18cc11d113f
+Reviewers: contract ✅ (profile `small`: contract lens only)
+Raw report: docs/reviews/2026-11-17-mix-engine-results/raw/impl-review-01-r1-contract.md
+
+| ID | Sev | Lens | Finding | Resolution |
+| --- | --- | --- | --- | --- |
+| I1 | Nit | contract | R2: an engine result with `url=None` raises in `fuse_results`, outside the per-engine try, and sinks the search | open |
+| I2 | Nit | contract | R6: no service test has engines answering out of configured order | open |
+| I3 | Nit | contract | R3: "3 engines × 5 URLs, limit 5" scenario only tested with one engine | open |
+| I4 | Nit | contract | R4: `?id=1`/`?id=2` kept apart only tested at `normalize_url`, not through fusion | open |
+| I5 | Nit | contract | R2: timeout test doesn't bound elapsed time | open |
+| I6 | Nit | contract | D4: per-engine count/duration info log untested | open |
+| I7 | Nit | contract | D2: `rstrip("/")` strips every trailing slash, notes say one | open |
+| I8 | Nit | contract | D3: a whitespace-only title counts as non-empty | open |
+| I9 | Nit | contract | D1: best-rank tie-break not tested on its own (near-unreachable with float scores) | open |
+| I10 | Nit | contract | D2: userinfo dropped from key; IPv6 brackets lost | open |
+| I11 | Nit | contract | D2: tracking keys matched case-insensitively, beyond notes | open |
+| I12 | Nit | contract | D4: an engine-raised builtin TimeoutError is logged as "timed out" | open |
+| I13 | Nit | contract | R7/R8: fallback "runs" and logs for non-web short searches though it returns [] at once | open |
+| I14 | Nit | contract | README still says engines are tried in order (phase 02 scope) | open |
