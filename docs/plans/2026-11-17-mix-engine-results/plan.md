@@ -1,6 +1,6 @@
 ---
 title: Mix results from several search engines
-status: approved
+status: in-progress
 created: 2026-11-17
 updated: 2026-11-17
 design_review: { status: passed, rounds: 1, last: 2026-11-17 }
@@ -252,7 +252,7 @@ Tasks live in `phases/NN-*.md`. Phase 01: search behavior (R1–R9, R11, R12). P
 
 | Phase | Title | Status | Tasks |
 | --- | --- | --- | --- |
-| 01 | Parallel engines with rank fusion | approved | 0/9 |
+| 01 | Parallel engines with rank fusion | in-progress | 0/9 |
 | 02 | Show engines in tool output and docs | approved | 0/4 |
 
 ## Decision log

@@ -1,9 +1,9 @@
 ---
 phase: 1
 title: Parallel engines with rank fusion
-status: approved
-branch: null
-base: null
+status: in-progress
+branch: feat/mix-engine-results-p1
+base: aa0407cd3bc4a6ead460697ed6216f60c3142fb3
 delivers: [R1, R2, R3, R4, R5, R6, R7, R8, R9, R11, R12]
 design_review: { status: passed, rounds: 1, last: 2026-11-17 }
 impl_review: { status: none, rounds: 0, last: null }
