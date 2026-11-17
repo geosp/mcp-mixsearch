@@ -72,8 +72,11 @@ Raw report: docs/reviews/2026-11-17-mix-engine-results/raw/impl-review-02-r1-con
 
 | ID | Sev | Lens | Finding | Resolution |
 | --- | --- | --- | --- | --- |
-| J1 | Nit | contract | README says URL case is ignored in dedupe; only scheme and host are lowercased (D2) | open |
-| J2 | Nit | contract | R10: missing `engines` key tested only for summaries, not `full_web_search` | open |
-| J3 | Nit | contract | Task 2.3: clean-checkout check has no evidence in the diff | open |
-| J4 | Nit | contract | instructions.md `source` section doesn't say non-web searches use fewer engines (R8) | open |
-| J5 | Nit | contract | Phase status still in-progress with 4/4 tasks | open |
+| J1 | Nit | contract | README says URL case is ignored in dedupe; only scheme and host are lowercased (D2) | fixed: README fusion paragraph |
+| J2 | Nit | contract | R10: missing `engines` key tested only for summaries, not `full_web_search` | fixed: test_tools full_web_search fixture drops the key (catches a result["engines"] mutant) |
+| J3 | Nit | contract | Task 2.3: clean-checkout check has no evidence in the diff | contested: run in a clean worktree at 215b063; all checks passed |
+| J4 | Nit | contract | instructions.md `source` section doesn't say non-web searches use fewer engines (R8) | fixed: instructions.md source section |
+| J5 | Nit | contract | Phase status still in-progress with 4/4 tasks | contested: intended; set to done when the phase closes |
+
+## 2026-11-17 · done · phase 02
+No manual check: the behavior is text formatting, exercised through a real FastMCP client in tests/test_tools.py; the owner agreed.

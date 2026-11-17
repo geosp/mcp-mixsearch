@@ -54,6 +54,7 @@ Returns:
   - `"images"`: Image search results
   - `"videos"`: Video content
   - `"web"` or null: Regular web search (default)
+- Fewer engines answer news, images and videos than web searches, so those may return fewer results
 
 ### language (optional, language preference)
 - Preferred result language, as a language code like `"en"`, `"es"`, `"fr"`, `"de"`, `"zh"`

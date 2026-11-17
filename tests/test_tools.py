@@ -38,7 +38,6 @@ class FakeService:
                     "full_content": "",
                     "fetch_status": "error",
                     "error": "timeout",
-                    "engines": [],
                 },
             ],
         }

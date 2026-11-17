@@ -103,9 +103,9 @@ The cheap engines are queried in parallel, each with its own timeout (`ENGINE_TI
 
 Their ranked lists are merged with reciprocal rank fusion: a result scores `1 / (60 + rank)` for
 each engine that lists it, so results that several engines rank highly come first. Duplicates are
-merged by normalized URL (case, `www.`, tracking parameters such as `utm_*`, fragments and
-trailing slashes are ignored), and each result lists the engines that returned it, for example
-`Engines: BraveAPI, DDGS`.
+merged by normalized URL (scheme and host case, `www.`, tracking parameters such as `utm_*`,
+fragments and a trailing slash are ignored), and each result lists the engines that returned it,
+for example `Engines: BraveAPI, DDGS`.
 
 When fewer results than `limit` come back for a web search, **Brave (browser)** (`Brave`) scrapes
 search.brave.com in headless Firefox as a fallback, with a 30 s timeout, and its results are
