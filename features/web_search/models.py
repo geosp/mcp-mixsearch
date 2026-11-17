@@ -4,7 +4,7 @@ Models for the web search feature
 
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 
 def utc_now_iso() -> str:
@@ -25,6 +25,7 @@ class SearchResult:
     timestamp: str = field(default_factory=utc_now_iso)
     fetch_status: str = "success"
     error: Optional[str] = None
+    engines: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to a plain dictionary"""

@@ -22,12 +22,12 @@ offline.
 
 ### 1. Pure fusion logic
 
-- [ ] 1.1 Add `engines: List[str]` (default empty) to `SearchResult` (R6, D8). Verify: `to_dict()`
+- [x] 1.1 Add `engines: List[str]` (default empty) to `SearchResult` (R6, D8). Verify: `to_dict()`
   includes `engines`, and the existing tests in `tests/test_engines.py` still pass.
-- [ ] 1.2 Add `features/web_search/fusion.py` with `normalize_url(url) -> str` by the rules in D2
+- [x] 1.2 Add `features/web_search/fusion.py` with `normalize_url(url) -> str` by the rules in D2
   (notes.md#d2). Verify: `tests/test_fusion.py` covers every row of the notes table, plus a
   non-http URL.
-- [ ] 1.3 Add `fuse_results(lists: Sequence[Tuple[str, List[SearchResult]]]) -> List[SearchResult]`:
+- [x] 1.3 Add `fuse_results(lists: Sequence[Tuple[str, List[SearchResult]]]) -> List[SearchResult]`:
   drop empty URLs, dedupe within and across lists, score by RRF, pick fields by D3, fill `engines`
   in list order and sort by D1 (R3, R4, R5, R6). Verify: tests for the notes.md#d1 worked example,
   a tie-break, a same-engine duplicate, the D3 title and description picks, and empty input.
