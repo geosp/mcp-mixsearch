@@ -37,3 +37,5 @@ Raw reports: docs/reviews/2026-11-17-mix-engine-results/raw/design-review-01-*.m
 | F28 | Nit | fresh reader | D5 cites "the acceptance criterion" with no source | fixed: D5 |
 | F29 | Nit | fresh reader | D7: what if the setting exceeds the 15 s HTTP timeout | fixed: D7 |
 | F30 | Nit | fresh reader | Links' decision-log vs plan's Decision log not distinguished | fixed: Links |
+
+## 2026-11-17 · approved · whole plan (phases 01, 02)
