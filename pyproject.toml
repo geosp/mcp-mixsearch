@@ -1,6 +1,6 @@
 [project]
 name = "mcp-mixsearch"
-version = "1.0.0"
+version = "1.1.0"
 description = "MCP server for web search with multi-engine support and content extraction"
 readme = "README.md"
 requires-python = ">=3.13"

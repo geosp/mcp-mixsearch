@@ -96,7 +96,7 @@ cd docker/mcp && docker-compose restart mcp-mixsearch
 - **Endpoints**: `/mcp` for the MCP protocol and `/health` for health checks. There is no REST API
 - **Auth**: The server has no auth provider, so with `MCP_AUTH_ENABLED` unset or `true` it refuses to start; keep `MCP_AUTH_ENABLED=false` and put an authenticating gateway in front if needed
 - **Production mode**: Uses `uvx` to run the package directly from the GitHub repository (`git+https://github.com/geosp/mcp-mixsearch.git`)
-- **Versioned deployments**: Use specific version tags (e.g., `:v1.0.0`) for stable, immutable deployments instead of `:main` for bleeding-edge
+- **Versioned deployments**: Use a release tag (e.g., `:v1.1.0`) instead of `:main` or `:latest`, which change on every merge. See [Semantic Versioning & Releases](#semantic-versioning--releases)
 
 ## Environment Variables
 
@@ -132,14 +132,14 @@ sudo podman-compose logs -f mcp-mixsearch
 sudo podman-compose down
 
 # Production mode
-sudo podman-compose -f docker-compose.prod.yml up -d
-sudo podman-compose -f docker-compose.prod.yml logs -f mcp-mixsearch
-sudo podman-compose -f docker-compose.prod.yml down
+sudo podman-compose -f prod/docker-compose.yml up -d
+sudo podman-compose -f prod/docker-compose.yml logs -f mcp-mixsearch
+sudo podman-compose -f prod/docker-compose.yml down
 
 # Production versioned mode
-sudo podman-compose -f docker-compose.prod.v1.0.0.yml up -d
-sudo podman-compose -f docker-compose.prod.v1.0.0.yml logs -f mcp-mixsearch
-sudo podman-compose -f docker-compose.prod.v1.0.0.yml down
+sudo podman-compose -f prod/docker-compose.v1.1.0.yml up -d
+sudo podman-compose -f prod/docker-compose.v1.1.0.yml logs -f mcp-mixsearch
+sudo podman-compose -f prod/docker-compose.v1.1.0.yml down
 ```
 
 If you encounter container build failures in LXC, the privileged configuration above should resolve the `/proc` mount permission errors.
@@ -173,55 +173,67 @@ curl http://localhost:3000/mcp
 
 ## Semantic Versioning & Releases
 
-The project uses [semantic versioning](https://semver.org/) for stable releases. Version tags follow the format `vMAJOR.MINOR.PATCH` (e.g., `v1.0.0`).
+The project uses [semantic versioning](https://semver.org/) for stable releases. Version tags follow the format `vMAJOR.MINOR.PATCH` (e.g., `v1.1.0`).
 
 ### Release Process
 
-1. **Create a Git tag** for the release:
+1. **Merge a pull request** that bumps `version` in `pyproject.toml` and moves the `Unreleased`
+   entries in [CHANGELOG.md](../CHANGELOG.md) under the new version.
+
+2. **Tag the merge commit on `main`** and push the tag:
    ```bash
-   git tag v1.0.0
-   git push origin v1.0.0
+   git switch main && git pull
+   git tag -a v1.1.0 -m "v1.1.0"
+   git push origin v1.1.0
    ```
 
-2. **GitHub Actions automatically**:
-   - Builds and pushes Docker images with version tags
-   - Creates multiple tags: `v1.0.0`, `v1.0`, `v1`, `latest`
+3. **GitHub Actions** (`.github/workflows/docker-publish.yml`) builds the image and pushes it with
+   the tags listed below.
 
-3. **Use versioned images** in production:
+4. **Create the GitHub release** from the changelog section:
    ```bash
-   # Instead of :main, use specific version
-   docker-compose -f docker-compose.prod.v1.0.0.yml up -d
+   gh release create v1.1.0 --title "v1.1.0" --notes-file <file with the 1.1.0 section>
    ```
 
-### Available Version Tags
+### Available Image Tags
 
-When you create a semantic version tag like `v1.2.3`, the following Docker image tags are created:
-- `ghcr.io/geosp/mcp-mixsearch:v1.2.3` (full version)
-- `ghcr.io/geosp/mcp-mixsearch:v1.2` (major.minor)
-- `ghcr.io/geosp/mcp-mixsearch:v1` (major only)
-- `ghcr.io/geosp/mcp-mixsearch:latest` (latest release)
+| Event | Tags pushed |
+| --- | --- |
+| Merge (push) to `main` | `main`, `latest`, `sha-<short sha>` |
+| Tag `v1.2.3` | `v1.2.3`, `1.2.3`, `1.2`, `1`, `latest`, `sha-<short sha>` |
+| Pull request | Built, not pushed |
+
+`latest` follows `main`; it doesn't mean "latest release". For a pinned deployment, use a full
+version tag such as `v1.2.3` or `1.2.3`.
+
+> **Note:** `prod/docker-compose.yml` starts the server with
+> `uvx mcp-mixsearch@git+https://github.com/geosp/mcp-mixsearch.git`, which installs the code from
+> the repository's default branch when the container starts. Pinning the image tag pins the
+> runtime, not that code. To pin the code too, append the tag to the URL, for example
+> `...mcp-mixsearch.git@v1.1.0`.
 
 ### Creating Versioned Compose Files
 
 To create a versioned compose file for any release:
 
 ```bash
-# Replace VERSION with your desired version (e.g., v1.0.0)
-VERSION=v1.0.0
+# Replace VERSION with your desired version (e.g., v1.1.0)
+VERSION=v1.1.0
 
-# Copy the template
-cp docker-compose.prod.yml docker-compose.prod.${VERSION}.yml
+# Copy the production compose file
+cp prod/docker-compose.yml prod/docker-compose.${VERSION}.yml
 
-# Edit the image tag (change :main to :VERSION)
-# You can do this manually or use sed:
-sed -i "s|ghcr.io/geosp/mcp-mixsearch:main|ghcr.io/geosp/mcp-mixsearch:${VERSION}|g" docker-compose.prod.${VERSION}.yml
+# Pin the image tag and the code (see the note above)
+sed -i -e "s|ghcr.io/geosp/mcp-mixsearch:main|ghcr.io/geosp/mcp-mixsearch:${VERSION}|g" \
+       -e "s|mcp-mixsearch.git\"|mcp-mixsearch.git@${VERSION}\"|g" prod/docker-compose.${VERSION}.yml
 ```
 
-This creates `docker-compose.prod.v1.0.0.yml` that uses the stable `v1.0.0` image instead of the `main` branch.
+This creates `prod/docker-compose.v1.1.0.yml`, which runs the `v1.1.0` image and code instead of
+`main`.
 
 ### Branch vs Release Strategy
 
 - **Branch-based** (`:main`): Latest development version, updated on every push
-- **Release-based** (`:v1.0.0`): Stable, immutable versions for production
+- **Release-based** (`:v1.1.0`): Stable, immutable versions for production
 
 Use branch-based for development/testing, release-based for production stability.
