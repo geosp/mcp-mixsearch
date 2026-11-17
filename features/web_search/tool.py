@@ -5,7 +5,7 @@ Provides web search tools through the MCP protocol.
 """
 
 import logging
-from typing import Optional
+from typing import Any, Callable, Optional, TypeVar, cast
 
 from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
@@ -16,6 +16,13 @@ from .service import WebSearchService
 from .url_safety import UnsafeURLError
 
 logger = logging.getLogger(__name__)
+
+F = TypeVar("F", bound=Callable[..., Any])
+
+
+def docstring_from(filename: str) -> Callable[[F], F]:
+    """Typed wrapper for inject_docstring, which has no return annotation"""
+    return cast(Callable[[F], F], inject_docstring(lambda: load_instruction(filename, __file__)))
 
 
 def register_tool(mcp: FastMCP, web_search_service: WebSearchService) -> None:
@@ -28,7 +35,7 @@ def register_tool(mcp: FastMCP, web_search_service: WebSearchService) -> None:
     """
 
     @mcp.tool()
-    @inject_docstring(lambda: load_instruction("instructions.md", __file__))
+    @docstring_from("instructions.md")
     async def full_web_search(
         query: str,
         limit: int = 5,
@@ -74,7 +81,7 @@ def register_tool(mcp: FastMCP, web_search_service: WebSearchService) -> None:
         return response_text
 
     @mcp.tool()
-    @inject_docstring(lambda: load_instruction("instructions_summaries.md", __file__))
+    @docstring_from("instructions_summaries.md")
     async def get_web_search_summaries(
         query: str,
         limit: int = 5,
@@ -108,7 +115,7 @@ def register_tool(mcp: FastMCP, web_search_service: WebSearchService) -> None:
         return response_text
 
     @mcp.tool()
-    @inject_docstring(lambda: load_instruction("instructions_single_page.md", __file__))
+    @docstring_from("instructions_single_page.md")
     async def get_single_web_page_content(
         url: str, max_content_length: Optional[int] = None
     ) -> str:

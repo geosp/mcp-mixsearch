@@ -19,6 +19,7 @@ from typing import Awaitable, Callable, Dict, List, Optional, Tuple
 from urllib.parse import urlsplit
 
 import httpx
+from playwright.async_api import Route
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ async def resolve_host(host: str) -> List[str]:
     """Resolve a hostname to its IP addresses"""
     loop = asyncio.get_running_loop()
     infos = await loop.getaddrinfo(host, None, type=socket.SOCK_STREAM)
-    return [info[4][0].split("%", 1)[0] for info in infos]
+    return [str(info[4][0]).split("%", 1)[0] for info in infos]
 
 
 def is_public_ip(address: str) -> bool:
@@ -113,7 +114,7 @@ class URLGuard:
         """httpx request event hook: runs for the first request and every redirect"""
         await self.check(str(request.url))
 
-    async def route_handler(self, route) -> None:
+    async def route_handler(self, route: Route) -> None:
         """Playwright route handler: aborts browser requests to non-public hosts"""
         url = route.request.url
         if urlsplit(url).scheme.lower() in BROWSER_LOCAL_SCHEMES:

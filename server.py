@@ -34,11 +34,11 @@ class MixSearchService(BaseService):
         """Get the service name"""
         return "mixsearch"
 
-    def initialize(self):
+    def initialize(self) -> None:
         """Initialize the service"""
         logger.info("Initializing MixSearch service")
 
-    def register_mcp_tools(self, mcp: FastMCP):
+    def register_mcp_tools(self, mcp: FastMCP) -> None:
         """Register MCP tools and the HTTP health check"""
         register_tool(mcp, self.web_search_service)
 
@@ -53,7 +53,7 @@ class MixSearchService(BaseService):
                 }
             )
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Cleanup resources"""
         logger.info("Cleaning up MixSearch service")
 

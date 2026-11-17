@@ -196,7 +196,7 @@ class WebSearchService:
         semaphore = asyncio.Semaphore(self.max_concurrent_requests)
         max_length = max_content_length or self.max_content_length
 
-        async def extract_with_semaphore(result: SearchResult):
+        async def extract_with_semaphore(result: SearchResult) -> None:
             async with semaphore:
                 try:
                     content = await self.extractor.extract(result.url, max_length)

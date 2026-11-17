@@ -195,7 +195,7 @@ def parse_ddg_html(page: str, limit: int) -> List[SearchResult]:
             results.append(
                 SearchResult(
                     title=title_el.get_text().strip(),
-                    url=unwrap_ddg_redirect(title_el["href"]),
+                    url=unwrap_ddg_redirect(str(title_el["href"])),
                     description=snippet_el.get_text().strip(),
                 )
             )
