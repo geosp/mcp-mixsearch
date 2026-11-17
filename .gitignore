@@ -195,3 +195,22 @@ Thumbs.db
 .cache/
 cache/
 __pycache__/
+.ruff_cache/
+
+# Secrets and local environment
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Agent tooling: local, per-user settings and session data
+.claude/settings.local.json
+.claude/*.local.*
+
+# Scratch output from the github-pr skill
+pr-description.md
+
+# Files the new-project skill wrote beside an existing one, for the owner to merge,
+# and temporary files an interrupted scaffold run can leave
+*.new-project
+.scaffold-*.tmp
