@@ -177,11 +177,10 @@ problem). Details: notes.md#d4
 
 ### D5 · The browser engine as a separate fallback
 
-`WebSearchService` holds `engines` (cheap, parallel) and `fallback_engine`. Tests that pass
-`engines=` without `fallback_engine=` get no fallback, so stubs never reach the real browser
-engine. Its timeout is a module constant (30 s), and its list is fused as one more. Rejected:
-running it on every search (a Firefox page load per query); only on zero results (the goal is a
-full `limit`).
+`WebSearchService` holds `engines` (cheap, parallel) and `fallback_engine`; passing only `engines=`
+means no fallback, so test stubs never reach the browser. It runs for `web` only (R8), under a 30 s
+module constant, and its list is fused as one more. Rejected: every search (a Firefox page load per
+query); only on zero results (the goal is a full `limit`).
 
 ### D6 · Remove `assess_result_quality`
 
@@ -210,8 +209,7 @@ default empty. Rejected: putting them in `service.py` (it mixes orchestration an
 
 ## Risks
 
-Evidence: notes.md#risks.
-- **A typical search gets slower:** it waits for the slowest cheap engine, up to 10 s, instead of
+- **A typical search gets slower** (evidence for all risks: notes.md#risks): it waits for the slowest cheap engine, up to 10 s, instead of
   stopping at the first good one. → Accepted for mixed results; a failing engine no longer delays
   the next. The timeout is configurable (D7), and durations are logged (D4).
 - **The worst case is ~40 s** (10 s plus 30 s for the fallback). → The fallback runs only on short
@@ -256,3 +254,5 @@ Tasks live in `phases/NN-*.md`. Phase 01: search behavior (R1–R9, R11, R12). P
 | 02 | Show engines in tool output and docs | approved | 0/4 |
 
 ## Decision log
+
+- 2026-11-17 · D5: fallback skipped for non-web sources (impl review I13); results unchanged.

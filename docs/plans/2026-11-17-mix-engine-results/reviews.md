@@ -47,17 +47,17 @@ Raw report: docs/reviews/2026-11-17-mix-engine-results/raw/impl-review-01-r1-con
 
 | ID | Sev | Lens | Finding | Resolution |
 | --- | --- | --- | --- | --- |
-| I1 | Nit | contract | R2: an engine result with `url=None` raises in `fuse_results`, outside the per-engine try, and sinks the search | open |
-| I2 | Nit | contract | R6: no service test has engines answering out of configured order | open |
-| I3 | Nit | contract | R3: "3 engines × 5 URLs, limit 5" scenario only tested with one engine | open |
-| I4 | Nit | contract | R4: `?id=1`/`?id=2` kept apart only tested at `normalize_url`, not through fusion | open |
-| I5 | Nit | contract | R2: timeout test doesn't bound elapsed time | open |
-| I6 | Nit | contract | D4: per-engine count/duration info log untested | open |
-| I7 | Nit | contract | D2: `rstrip("/")` strips every trailing slash, notes say one | open |
-| I8 | Nit | contract | D3: a whitespace-only title counts as non-empty | open |
-| I9 | Nit | contract | D1: best-rank tie-break not tested on its own (near-unreachable with float scores) | open |
-| I10 | Nit | contract | D2: userinfo dropped from key; IPv6 brackets lost | open |
-| I11 | Nit | contract | D2: tracking keys matched case-insensitively, beyond notes | open |
-| I12 | Nit | contract | D4: an engine-raised builtin TimeoutError is logged as "timed out" | open |
-| I13 | Nit | contract | R7/R8: fallback "runs" and logs for non-web short searches though it returns [] at once | open |
-| I14 | Nit | contract | README still says engines are tried in order (phase 02 scope) | open |
+| I1 | Nit | contract | R2: an engine result with `url=None` raises in `fuse_results`, outside the per-engine try, and sinks the search | fixed: test_missing_url_is_dropped, test_engine_with_missing_url_does_not_sink_search; fusion.py |
+| I2 | Nit | contract | R6: no service test has engines answering out of configured order | fixed: test_engines_listed_in_configured_order_not_response_order (catches an as_completed mutant) |
+| I3 | Nit | contract | R3: "3 engines × 5 URLs, limit 5" scenario only tested with one engine | fixed: test_three_engines_cut_to_limit |
+| I4 | Nit | contract | R4: `?id=1`/`?id=2` kept apart only tested at `normalize_url`, not through fusion | fixed: test_different_query_values_stay_separate_results |
+| I5 | Nit | contract | R2: timeout test doesn't bound elapsed time | fixed: elapsed bound in test_failing_and_slow_engines_are_logged_and_skipped |
+| I6 | Nit | contract | D4: per-engine count/duration info log untested | fixed: info-log assertion in the same test |
+| I7 | Nit | contract | D2: `rstrip("/")` strips every trailing slash, notes say one | fixed: normalize_url row `/a//`; fusion.py strips one slash |
+| I8 | Nit | contract | D3: a whitespace-only title counts as non-empty | fixed: test_whitespace_title_counts_as_empty; fusion.py |
+| I9 | Nit | contract | D1: best-rank tie-break not tested on its own (near-unreachable with float scores) | accepted: equal float scores with different best ranks are near-unreachable |
+| I10 | Nit | contract | D2: userinfo dropped from key; IPv6 brackets lost | accepted: dedupe key only; rare inputs |
+| I11 | Nit | contract | D2: tracking keys matched case-insensitively, beyond notes | accepted: desirable; recorded in notes.md#d2 |
+| I12 | Nit | contract | D4: an engine-raised builtin TimeoutError is logged as "timed out" | accepted: no current engine library raises builtin TimeoutError |
+| I13 | Nit | contract | R7/R8: fallback "runs" and logs for non-web short searches though it returns [] at once | fixed: test_fallback_skipped_for_non_web_sources; service.py; D5 + plan Decision log |
+| I14 | Nit | contract | README still says engines are tried in order (phase 02 scope) | accepted: phase 02 task 2.2 |

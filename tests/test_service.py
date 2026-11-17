@@ -92,17 +92,22 @@ async def test_failing_and_slow_engines_are_logged_and_skipped(guard, caplog):
         FakeEngine("good", [result("python release")]),
     ]
     config = WebSearchConfig(brave_api_key=None, engine_timeout_seconds=0.05)
-    caplog.set_level(logging.WARNING)
+    caplog.set_level(logging.INFO)
+    loop = asyncio.get_running_loop()
+    start = loop.time()
 
     summaries = await make_service(guard, engines, config=config).search_summaries(
         "python release", SearchFilters()
     )
+
+    assert loop.time() - start < 0.5
 
     assert [r["title"] for r in summaries["results"]] == ["python release"]
     assert summaries["results"][0]["engines"] == ["good"]
     messages = caplog.text
     assert "broken failed" in messages and "boom" in messages
     assert "slow timed out" in messages
+    assert "Search engine good: 1 results in" in messages
 
 
 async def test_engines_run_concurrently(guard):
@@ -173,7 +178,7 @@ async def test_slow_fallback_times_out(guard, caplog, monkeypatch):
 
 
 async def test_every_engine_gets_the_same_filters(guard):
-    filters = SearchFilters.from_tool_args(limit=3, recency_days=7, source="news", country="fr")
+    filters = SearchFilters.from_tool_args(limit=3, recency_days=7, language="fr", country="ca")
     engines = [FakeEngine("a"), FakeEngine("b")]
     fallback = FakeEngine("Brave")
     await make_service(guard, engines, fallback_engine=fallback).search_summaries("q", filters)
@@ -224,6 +229,40 @@ async def test_extract_single_page_applies_configured_max_length(guard):
     content = await service.extract_single_page("https://example.com/")
 
     assert content.endswith("[Content truncated at 100 characters]")
+
+
+async def test_engine_with_missing_url_does_not_sink_search(guard):
+    bad = FakeEngine("bad", [SearchResult(title="no url", url=None, description="")])
+    good = FakeEngine("good", [result("kept")])
+    summaries = await make_service(guard, [bad, good]).search_summaries("q", SearchFilters())
+    assert [r["title"] for r in summaries["results"]] == ["kept"]
+
+
+async def test_fallback_skipped_for_non_web_sources(guard):
+    fallback = FakeEngine("Brave", [result("browser")])
+    engine = FakeEngine("cheap", [result("one news story")])
+    summaries = await make_service(guard, [engine], fallback_engine=fallback).search_summaries(
+        "q", SearchFilters(source="news")
+    )
+    assert fallback.calls == 0
+    assert summaries["total_results"] == 1
+
+
+async def test_engines_listed_in_configured_order_not_response_order(guard):
+    shared = "https://shared.example/"
+    slow_first = FakeEngine("BraveAPI", [result("a", url=shared)], delay=0.1)
+    fast_second = FakeEngine("DDGS", [result("b", url=shared)])
+    summaries = await make_service(guard, [slow_first, fast_second]).search_summaries(
+        "q", SearchFilters()
+    )
+    assert summaries["results"][0]["engines"] == ["BraveAPI", "DDGS"]
+
+
+async def test_three_engines_cut_to_limit(guard):
+    engines = [FakeEngine(f"e{i}", [result(f"e{i} r{j}") for j in range(5)]) for i in range(3)]
+    summaries = await make_service(guard, engines).search_summaries("q", SearchFilters(limit=5))
+    assert summaries["total_results"] == 5
+    assert len({r["url"] for r in summaries["results"]}) == 5
 
 
 def test_engine_order_depends_on_brave_api_key(guard):

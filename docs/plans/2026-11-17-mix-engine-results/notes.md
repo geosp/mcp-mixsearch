@@ -39,6 +39,7 @@ Applied with `urllib.parse` (standard library) only:
    `igshid`, `ref_src`. Sort the remaining pairs, then `urlencode`.
 7. Drop the fragment.
 
+Keys are matched case-insensitively, so `UTM_Source` and `GCLID` are dropped too.
 `ref` is deliberately kept, because some sites use it for content. The list lives in one constant
 in `fusion.py`.
 

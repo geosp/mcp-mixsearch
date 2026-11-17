@@ -20,6 +20,7 @@ def r(url, title="t", description="", timestamp="ts"):
         ("http://example.com:8080/a", "http://example.com:8080/a"),
         ("https://example.com/a?UTM_Medium=x&gclid=1&ref=home", "https://example.com/a?ref=home"),
         ("https://example.com/a?q=", "https://example.com/a?q="),
+        ("https://example.com/a//", "https://example.com/a/"),
         ("  mailto:someone@example.com ", "mailto:someone@example.com"),
         ("not a url", "not a url"),
     ],
@@ -144,3 +145,28 @@ def test_search_result_to_dict_includes_engines():
     result = SearchResult(title="t", url="u", description="d", engines=["DDGS"])
     assert result.to_dict()["engines"] == ["DDGS"]
     assert SearchResult(title="t", url="u", description="d").to_dict()["engines"] == []
+
+
+def test_missing_url_is_dropped():
+    fused = fuse_results([("E1", [r(None), r("https://a.example/")])])
+    assert [f.url for f in fused] == ["https://a.example/"]
+
+
+def test_whitespace_title_counts_as_empty():
+    fused = fuse_results(
+        [
+            ("E1", [r("https://a.example/", title="   ")]),
+            ("E2", [r("https://a.example/", title="Real title")]),
+        ]
+    )
+    assert fused[0].title == "Real title"
+
+
+def test_different_query_values_stay_separate_results():
+    fused = fuse_results(
+        [
+            ("E1", [r("https://example.com/a?id=1")]),
+            ("E2", [r("https://example.com/a?id=2")]),
+        ]
+    )
+    assert len(fused) == 2

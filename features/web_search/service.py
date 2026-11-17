@@ -169,7 +169,12 @@ class WebSearchService:
         )
         merged = fuse_results(lists)
 
-        if len(merged) < filters.limit and self.fallback_engine is not None:
+        # The fallback scrapes a web results page, so it can't help other sources
+        if (
+            len(merged) < filters.limit
+            and self.fallback_engine is not None
+            and filters.source == "web"
+        ):
             logger.info(
                 f"{len(merged)} of {filters.limit} results; trying {self.fallback_engine.name}"
             )

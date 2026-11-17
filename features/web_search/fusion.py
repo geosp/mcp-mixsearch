@@ -63,8 +63,8 @@ def normalize_url(url: str) -> str:
     netloc = host if port is None or port == _DEFAULT_PORTS[scheme] else f"{host}:{port}"
 
     path = parts.path or "/"
-    if len(path) > 1:
-        path = path.rstrip("/") or "/"
+    if len(path) > 1 and path.endswith("/"):
+        path = path[:-1]
 
     query = urlencode(
         sorted(
@@ -95,7 +95,7 @@ class _Group:
 def _merge(group: _Group, engine_names: Sequence[str]) -> SearchResult:
     ordered = sorted(group.occurrences, key=lambda o: (o.rank, o.engine_index))
     best = ordered[0].result
-    title = next((o.result.title for o in ordered if o.result.title), "")
+    title = next((o.result.title for o in ordered if o.result.title.strip()), "")
     description = max((o.result.description for o in ordered), key=len, default="")
     engine_indexes = sorted({o.engine_index for o in group.occurrences})
     return SearchResult(
@@ -126,7 +126,8 @@ def fuse_results(lists: Sequence[Tuple[str, List[SearchResult]]]) -> List[Search
         seen = set()
         rank = 0
         for result in results:
-            if not result.url.strip():
+            # Engines build URLs from untrusted payloads; one may be missing
+            if not isinstance(result.url, str) or not result.url.strip():
                 continue
             rank += 1
             key = normalize_url(result.url)
