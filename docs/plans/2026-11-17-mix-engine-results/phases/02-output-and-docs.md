@@ -1,9 +1,9 @@
 ---
 phase: 2
 title: Show engines in tool output and docs
-status: approved
-branch: null
-base: null
+status: in-progress
+branch: feat/mix-engine-results-p1
+base: 6e49df85c83f9fbe41f96327b7378e8ebe4e43ac
 delivers: [R10, R11]
 design_review: { status: passed, rounds: 1, last: 2026-11-17 }
 impl_review: { status: none, rounds: 0, last: null }
