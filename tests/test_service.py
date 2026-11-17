@@ -34,7 +34,10 @@ def make_service(guard, engines, handler=None, browser=None):
     client = mock_client(handler or (lambda request: httpx.Response(404)), guard)
     return WebSearchService(
         WebSearchConfig(brave_api_key=None),
-        guard=guard, http_client=client, browser=browser or FakeBrowser(), engines=engines,
+        guard=guard,
+        http_client=client,
+        browser=browser or FakeBrowser(),
+        engines=engines,
     )
 
 
@@ -62,7 +65,9 @@ async def test_failing_and_empty_engines_are_skipped(guard):
         FakeEngine("empty"),
         FakeEngine("good", [result("python release")]),
     ]
-    summaries = await make_service(guard, engines).search_summaries("python release", SearchFilters())
+    summaries = await make_service(guard, engines).search_summaries(
+        "python release", SearchFilters()
+    )
     assert summaries["total_results"] == 1
 
 
@@ -71,7 +76,9 @@ async def test_best_effort_results_when_no_engine_meets_threshold(guard):
         FakeEngine("weak", [result("unrelated")]),
         FakeEngine("less weak", [result("python snakes"), result("zoo")]),
     ]
-    summaries = await make_service(guard, engines).search_summaries("python release notes", SearchFilters())
+    summaries = await make_service(guard, engines).search_summaries(
+        "python release notes", SearchFilters()
+    )
     assert [r["title"] for r in summaries["results"]] == ["python snakes", "zoo"]
 
 
@@ -83,17 +90,28 @@ async def test_no_results_when_every_engine_fails(guard):
 
 async def test_results_are_limited(guard):
     engine = FakeEngine("many", [result(f"python {i}") for i in range(8)])
-    summaries = await make_service(guard, [engine]).search_summaries("python", SearchFilters(limit=3))
+    summaries = await make_service(guard, [engine]).search_summaries(
+        "python", SearchFilters(limit=3)
+    )
     assert summaries["total_results"] == 3
 
 
 async def test_search_and_extract_marks_blocked_urls_as_errors(guard):
-    article = "<html><body><article><p>" + "Readable python content. " * 30 + "</p></article></body></html>"
-    engine = FakeEngine("engine", [
-        result("python good", url="https://example.com/good"),
-        result("python internal", url="http://intranet.internal/admin"),
-    ])
-    service = make_service(guard, [engine], handler=lambda request: httpx.Response(200, text=article))
+    article = (
+        "<html><body><article><p>"
+        + "Readable python content. " * 30
+        + "</p></article></body></html>"
+    )
+    engine = FakeEngine(
+        "engine",
+        [
+            result("python good", url="https://example.com/good"),
+            result("python internal", url="http://intranet.internal/admin"),
+        ],
+    )
+    service = make_service(
+        guard, [engine], handler=lambda request: httpx.Response(200, text=article)
+    )
 
     response = await service.search_and_extract("python", SearchFilters())
 
@@ -105,7 +123,11 @@ async def test_search_and_extract_marks_blocked_urls_as_errors(guard):
 
 
 async def test_extract_single_page_applies_configured_max_length(guard):
-    article = "<html><body><article><p>" + "Readable content here. " * 100 + "</p></article></body></html>"
+    article = (
+        "<html><body><article><p>"
+        + "Readable content here. " * 100
+        + "</p></article></body></html>"
+    )
     service = make_service(guard, [], handler=lambda request: httpx.Response(200, text=article))
     service.max_content_length = 100
 
@@ -116,9 +138,12 @@ async def test_extract_single_page_applies_configured_max_length(guard):
 
 def test_engine_order_depends_on_brave_api_key(guard):
     client = mock_client(lambda request: httpx.Response(404), guard)
-    without_key = WebSearchService(WebSearchConfig(brave_api_key=None), guard=guard, http_client=client)
-    with_key = WebSearchService(WebSearchConfig(brave_api_key="key", ddgs_backend="bing"),
-                                guard=guard, http_client=client)
+    without_key = WebSearchService(
+        WebSearchConfig(brave_api_key=None), guard=guard, http_client=client
+    )
+    with_key = WebSearchService(
+        WebSearchConfig(brave_api_key="key", ddgs_backend="bing"), guard=guard, http_client=client
+    )
 
     assert [e.name for e in without_key.engines] == ["DDGS", "Brave", "DuckDuckGo"]
     assert [e.name for e in with_key.engines] == ["BraveAPI", "DDGS", "Brave", "DuckDuckGo"]

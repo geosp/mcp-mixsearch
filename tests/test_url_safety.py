@@ -32,13 +32,17 @@ async def test_unsafe_urls_are_rejected(guard, url):
         await guard.check(url)
 
 
-@pytest.mark.parametrize("url", ["https://example.com/page", "http://93.184.215.14/", "https://[2606:4700::1111]/"])
+@pytest.mark.parametrize(
+    "url", ["https://example.com/page", "http://93.184.215.14/", "https://[2606:4700::1111]/"]
+)
 async def test_public_urls_are_allowed(guard, url):
     await guard.check(url)
 
 
 async def test_allow_private_still_enforces_scheme():
-    guard = URLGuard(allow_private=True, resolver=make_resolver({"intranet.internal": ["10.0.0.5"]}))
+    guard = URLGuard(
+        allow_private=True, resolver=make_resolver({"intranet.internal": ["10.0.0.5"]})
+    )
     await guard.check("http://intranet.internal/")
     await guard.check("http://127.0.0.1/")
     with pytest.raises(UnsafeURLError):
@@ -79,8 +83,15 @@ async def test_redirect_to_private_address_is_blocked(guard):
 
 @pytest.mark.parametrize(
     "address, public",
-    [("8.8.8.8", True), ("10.0.0.1", False), ("100.64.0.1", False), ("224.0.0.1", False),
-     ("::ffff:10.0.0.1", False), ("2606:4700::1111", True), ("fe80::1", False)],
+    [
+        ("8.8.8.8", True),
+        ("10.0.0.1", False),
+        ("100.64.0.1", False),
+        ("224.0.0.1", False),
+        ("::ffff:10.0.0.1", False),
+        ("2606:4700::1111", True),
+        ("fe80::1", False),
+    ],
 )
 def test_is_public_ip(address, public):
     assert is_public_ip(address) is public
@@ -100,8 +111,12 @@ class FakeRoute:
 
 @pytest.mark.parametrize(
     "url, outcome",
-    [("https://example.com/app.js", "continued"), ("http://169.254.169.254/", "aborted"),
-     ("data:image/png;base64,AAAA", "continued"), ("blob:https://example.com/1", "continued")],
+    [
+        ("https://example.com/app.js", "continued"),
+        ("http://169.254.169.254/", "aborted"),
+        ("data:image/png;base64,AAAA", "continued"),
+        ("blob:https://example.com/1", "continued"),
+    ],
 )
 async def test_browser_route_handler(guard, url, outcome):
     route = FakeRoute(url)

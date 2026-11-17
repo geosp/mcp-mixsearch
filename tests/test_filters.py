@@ -5,8 +5,19 @@ from features.web_search.filters import SearchFilters
 
 @pytest.mark.parametrize(
     "days, bucket",
-    [(None, None), (-1, None), (0, None), (1, "d"), (2, "w"), (7, "w"), (8, "m"),
-     (30, "m"), (31, "y"), (365, "y"), (366, None)],
+    [
+        (None, None),
+        (-1, None),
+        (0, None),
+        (1, "d"),
+        (2, "w"),
+        (7, "w"),
+        (8, "m"),
+        (30, "m"),
+        (31, "y"),
+        (365, "y"),
+        (366, None),
+    ],
 )
 def test_time_bucket(days, bucket):
     assert SearchFilters(recency_days=days).time_bucket == bucket
@@ -34,8 +45,14 @@ def test_language_and_country_lowercased():
 
 @pytest.mark.parametrize(
     "country, language, region",
-    [(None, "fr", None), ("us", None, "us-en"), ("fr", None, "fr-fr"),
-     ("gb", None, "uk-en"), ("ca", "fr", "ca-fr"), ("br", None, "br-pt")],
+    [
+        (None, "fr", None),
+        ("us", None, "us-en"),
+        ("fr", None, "fr-fr"),
+        ("gb", None, "uk-en"),
+        ("ca", "fr", "ca-fr"),
+        ("br", None, "br-pt"),
+    ],
 )
 def test_region(country, language, region):
     assert SearchFilters(country=country, language=language).region == region
@@ -44,7 +61,10 @@ def test_region(country, language, region):
 def test_ddgs_kwargs():
     filters = SearchFilters.from_tool_args(limit=4, recency_days=7, country="DE")
     assert filters.ddgs_kwargs("auto") == {
-        "max_results": 4, "backend": "auto", "timelimit": "w", "region": "de-de",
+        "max_results": 4,
+        "backend": "auto",
+        "timelimit": "w",
+        "region": "de-de",
     }
     assert SearchFilters().ddgs_kwargs("bing") == {"max_results": 5, "backend": "bing"}
 
@@ -52,7 +72,10 @@ def test_ddgs_kwargs():
 def test_brave_api_params():
     filters = SearchFilters.from_tool_args(limit=3, recency_days=1, language="es", country="mx")
     assert filters.brave_api_params() == {
-        "count": 3, "country": "MX", "search_lang": "es", "freshness": "pd",
+        "count": 3,
+        "country": "MX",
+        "search_lang": "es",
+        "freshness": "pd",
     }
 
 

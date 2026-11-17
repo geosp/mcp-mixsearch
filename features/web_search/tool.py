@@ -5,7 +5,7 @@ Provides web search tools through the MCP protocol.
 """
 
 import logging
-from typing import Optional
+from typing import Any, Callable, Optional, TypeVar, cast
 
 from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
@@ -16,6 +16,13 @@ from .service import WebSearchService
 from .url_safety import UnsafeURLError
 
 logger = logging.getLogger(__name__)
+
+F = TypeVar("F", bound=Callable[..., Any])
+
+
+def docstring_from(filename: str) -> Callable[[F], F]:
+    """Typed wrapper for inject_docstring, which has no return annotation"""
+    return cast(Callable[[F], F], inject_docstring(lambda: load_instruction(filename, __file__)))
 
 
 def register_tool(mcp: FastMCP, web_search_service: WebSearchService) -> None:
@@ -28,7 +35,7 @@ def register_tool(mcp: FastMCP, web_search_service: WebSearchService) -> None:
     """
 
     @mcp.tool()
-    @inject_docstring(lambda: load_instruction("instructions.md", __file__))
+    @docstring_from("instructions.md")
     async def full_web_search(
         query: str,
         limit: int = 5,
@@ -38,10 +45,12 @@ def register_tool(mcp: FastMCP, web_search_service: WebSearchService) -> None:
         recency_days: Optional[int] = None,
         source: Optional[str] = None,
         language: Optional[str] = None,
-        country: Optional[str] = None
+        country: Optional[str] = None,
     ) -> str:
         """Comprehensive web search with full content extraction"""
-        filters = SearchFilters.from_tool_args(limit, top_n, recency_days, source, language, country)
+        filters = SearchFilters.from_tool_args(
+            limit, top_n, recency_days, source, language, country
+        )
         logger.info(f"MCP tool full_web_search: query='{query}', {filters}")
 
         result = await web_search_service.search_and_extract(
@@ -52,16 +61,18 @@ def register_tool(mcp: FastMCP, web_search_service: WebSearchService) -> None:
         )
 
         # Format for MCP response
-        response_text = f"Search completed for '{result['query']}' with {result['total_results']} results:\n\n"
+        response_text = (
+            f"Search completed for '{result['query']}' with {result['total_results']} results:\n\n"
+        )
 
-        for i, search_result in enumerate(result['results'], 1):
+        for i, search_result in enumerate(result["results"], 1):
             response_text += f"**{i}. {search_result['title']}**\n"
             response_text += f"URL: {search_result['url']}\n"
             response_text += f"Description: {search_result['description']}\n"
 
-            if search_result.get('full_content'):
+            if search_result.get("full_content"):
                 response_text += f"\n**Full Content:**\n{search_result['full_content']}\n"
-            elif search_result.get('fetch_status') == 'error':
+            elif search_result.get("fetch_status") == "error":
                 response_text += f"\n**Content Extraction Failed:** {search_result.get('error') or 'Unknown error'}\n"
 
             response_text += "\n---\n\n"
@@ -70,7 +81,7 @@ def register_tool(mcp: FastMCP, web_search_service: WebSearchService) -> None:
         return response_text
 
     @mcp.tool()
-    @inject_docstring(lambda: load_instruction("instructions_summaries.md", __file__))
+    @docstring_from("instructions_summaries.md")
     async def get_web_search_summaries(
         query: str,
         limit: int = 5,
@@ -78,35 +89,42 @@ def register_tool(mcp: FastMCP, web_search_service: WebSearchService) -> None:
         recency_days: Optional[int] = None,
         source: Optional[str] = None,
         language: Optional[str] = None,
-        country: Optional[str] = None
+        country: Optional[str] = None,
     ) -> str:
         """Lightweight web search returning only summaries"""
-        filters = SearchFilters.from_tool_args(limit, top_n, recency_days, source, language, country)
+        filters = SearchFilters.from_tool_args(
+            limit, top_n, recency_days, source, language, country
+        )
         logger.info(f"MCP tool get_web_search_summaries: query='{query}', {filters}")
 
         result = await web_search_service.search_summaries(query=query, filters=filters)
 
         # Format for MCP response
-        response_text = f"Search summaries for '{result['query']}' with {result['total_results']} results:\n\n"
+        response_text = (
+            f"Search summaries for '{result['query']}' with {result['total_results']} results:\n\n"
+        )
 
-        for i, summary in enumerate(result['results'], 1):
+        for i, summary in enumerate(result["results"], 1):
             response_text += f"**{i}. {summary['title']}**\n"
             response_text += f"URL: {summary['url']}\n"
             response_text += f"Description: {summary['description']}\n\n---\n\n"
 
-        logger.info(f"MCP tool get_web_search_summaries completed: {result['total_results']} results")
+        logger.info(
+            f"MCP tool get_web_search_summaries completed: {result['total_results']} results"
+        )
         return response_text
 
     @mcp.tool()
-    @inject_docstring(lambda: load_instruction("instructions_single_page.md", __file__))
-    async def get_single_web_page_content(url: str, max_content_length: Optional[int] = None) -> str:
+    @docstring_from("instructions_single_page.md")
+    async def get_single_web_page_content(
+        url: str, max_content_length: Optional[int] = None
+    ) -> str:
         """Extract content from a single webpage"""
         logger.info(f"MCP tool get_single_web_page_content: url='{url}'")
 
         try:
             content = await web_search_service.extract_single_page(
-                url=url,
-                max_content_length=max_content_length
+                url=url, max_content_length=max_content_length
             )
         except UnsafeURLError as e:
             logger.warning(f"Blocked get_single_web_page_content for {url}: {e}")

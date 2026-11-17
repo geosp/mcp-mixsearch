@@ -34,24 +34,26 @@ class MixSearchService(BaseService):
         """Get the service name"""
         return "mixsearch"
 
-    def initialize(self):
+    def initialize(self) -> None:
         """Initialize the service"""
         logger.info("Initializing MixSearch service")
 
-    def register_mcp_tools(self, mcp: FastMCP):
+    def register_mcp_tools(self, mcp: FastMCP) -> None:
         """Register MCP tools and the HTTP health check"""
         register_tool(mcp, self.web_search_service)
 
         @mcp.custom_route("/health", methods=["GET"])
         async def health(request: Request) -> JSONResponse:
             """Health check endpoint (HTTP transport only)"""
-            return JSONResponse({
-                "status": "healthy",
-                "service": self.get_service_name(),
-                "version": SERVICE_VERSION
-            })
+            return JSONResponse(
+                {
+                    "status": "healthy",
+                    "service": self.get_service_name(),
+                    "version": SERVICE_VERSION,
+                }
+            )
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Cleanup resources"""
         logger.info("Cleaning up MixSearch service")
 

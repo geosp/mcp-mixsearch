@@ -1,0 +1,218 @@
+# Project CI. Runs on every PR and on pushes to the default branch.
+# Fork safety: only `pull_request` (never `pull_request_target`), a read-only
+# token, and no secrets referenced anywhere in this file.
+# Pins: every action by full commit SHA, updated by Dependabot. uv, gitleaks,
+# actionlint and lychee are pinned below and bumped by hand (Dependabot cannot see them): for
+# uv, set UV_VERSION; for the others, set *_VERSION and *_SHA256 from the
+# release's checksums file.
+# The single required status check on main is `ci-ok`; its rule is in
+# .github/scripts/ci_gate.py (tested in tests/test_ci_gate.py).
+
+name: ci-gate
+
+# Retargeting a PR to another base does not re-run CI (`edited` is not a trigger,
+# because a skipped run on every title or body edit would replace a green ci-ok).
+# After changing a PR's base, close and reopen it to re-run CI against the new base.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A new push to a PR cancels its older run. Runs on the default branch are never
+# cancelled, so every commit there keeps its own ci-ok result.
+concurrency:
+  group: ci-gate-${{ github.ref }}-${{ github.event_name == 'pull_request' && 'pr' || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  UV_VERSION: "0.13.5"
+  GITLEAKS_VERSION: "8.30.1"
+  GITLEAKS_SHA256: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+  ACTIONLINT_VERSION: "1.7.12"
+  ACTIONLINT_SHA256: "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+  LYCHEE_VERSION: "0.24.2"
+  LYCHEE_SHA256: "1f4e0ef7f6554a6ed33dd7ac144fb2e1bbed98598e7af973042fc5cd43951c9a"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+      - run: uv sync --locked
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+
+  types:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+      - run: uv sync --locked
+      - run: uv run mypy
+
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+      - run: uv sync --locked
+      - run: uv run pytest
+
+  agents-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+      # The script's PEP 723 dependencies are locked in .agents/sync_agents.py.lock.
+      - run: uv run --locked .agents/sync_agents.py --check
+
+  workflows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install actionlint (pinned, checksum verified)
+        run: |
+          f="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl -fsSLo "$f" "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/${f}"
+          echo "${ACTIONLINT_SHA256}  ${f}" | sha256sum -c -
+          tar -xzf "$f" actionlint
+      # Uses the runner's shellcheck for the `run:` scripts.
+      - run: ./actionlint -no-color
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install gitleaks (pinned, checksum verified)
+        run: |
+          f="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSLo "$f" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${f}"
+          echo "${GITLEAKS_SHA256}  ${f}" | sha256sum -c -
+          tar -xzf "$f" gitleaks
+      # Canary: with this repository's config, gitleaks must still find a freshly
+      # generated fake key. A scanner that silently stops matching looks the same
+      # as a clean result, so this step fails if it finds nothing.
+      - name: Canary (gitleaks still catches a key)
+        run: |
+          canary="$RUNNER_TEMP/gitleaks-canary"
+          mkdir -p "$canary"
+          key="$(head -c 48 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 32)"
+          echo "api_key = \"${key}\"" > "$canary/notes.md"
+          if ./gitleaks dir --config .gitleaks.toml --redact --no-banner "$canary"; then
+            echo "gitleaks found nothing in the canary" >&2
+            exit 1
+          fi
+          echo "canary passed: gitleaks detected the fake key"
+      # On the default branch and manual runs the whole history is scanned, so a gitleaks
+      # upgrade with a new rule can flag an old commit and turn the default branch red. Fix that
+      # with a reviewed allowlist entry in .gitleaks.toml, not by rewriting history.
+      - name: Scan commits
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ -n "$BASE_SHA" ]; then
+            ./gitleaks git --config .gitleaks.toml --redact --log-opts="${BASE_SHA}..${HEAD_SHA}" .
+          else
+            ./gitleaks git --config .gitleaks.toml --redact .
+          fi
+
+  links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install lychee (pinned, checksum verified)
+        run: |
+          f="lychee-x86_64-unknown-linux-gnu.tar.gz"
+          curl -fsSLo "$f" "https://github.com/lycheeverse/lychee/releases/download/lychee-v${LYCHEE_VERSION}/${f}"
+          echo "${LYCHEE_SHA256}  ${f}" | sha256sum -c -
+          tar -xzf "$f" --strip-components=1 lychee-x86_64-unknown-linux-gnu/lychee
+      # Offline: internal links and anchors only, so external sites never block
+      # a merge. External URLs are checked weekly (links-weekly.yml).
+      # .claude/skills is a symlink to .agents/skills; checking it twice would
+      # resolve relative links from the wrong directory.
+      - name: Check internal links
+        run: >-
+          ./lychee --offline --no-progress --include-fragments --hidden
+          --exclude-path '\.claude/skills' --exclude-path '\.git/' --exclude-path '\.venv'
+          './**/*.md'
+      # Canary: the same offline check must reject a broken internal link.
+      - name: Canary (lychee still catches a broken link)
+        run: |
+          mkdir -p "$RUNNER_TEMP/link-canary"
+          echo '[broken](./does-not-exist.md)' > "$RUNNER_TEMP/link-canary/canary.md"
+          code=0
+          ./lychee --offline --no-progress "$RUNNER_TEMP/link-canary/canary.md" || code=$?
+          echo "lychee canary exit code: $code"
+          [ "$code" = "2" ] || { echo "lychee did not reject the broken link" >&2; exit 1; }
+
+  licenses:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Checks dependencies added or changed by the PR: permissive licenses only,
+      # and no high-severity known vulnerabilities. Check a new license against
+      # the package's own metadata before adding it here (Pillow, for example,
+      # declares MIT-CMU). Needs the Dependency graph, and on a private
+      # repository a GitHub Advanced Security licence, so private projects
+      # leave this job out.
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: never
+          allow-licenses: >-
+            Apache-2.0, MIT, MIT-0, BSD-2-Clause, BSD-3-Clause, ISC, PSF-2.0, Python-2.0,
+            MPL-2.0, Unlicense, 0BSD, CC0-1.0, Zlib, MIT-CMU
+          # typing-extensions (pulled in by mypy) is PSF-licensed, but GitHub's
+          # license data adds GPL-1.0-or-later to it.
+          allow-dependencies-licenses: pkg:pypi/typing-extensions
+
+
+  # Every job must succeed; a skipped job fails the gate. The only exception is a
+  # pull-request-only job on the default branch itself (see
+  # .github/scripts/ci_gate.py and its tests).
+  ci-ok:
+    if: always()
+    needs: [lint, types, tests, agents-sync, workflows, secrets, links, licenses]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: All required jobs passed
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+        run: python3 .github/scripts/ci_gate.py

@@ -18,23 +18,31 @@ PUBLIC_IP = "93.184.215.14"
 
 def make_resolver(hosts: Dict[str, List[str]]) -> Callable:
     """Resolver that maps known hosts to fixed IPs and everything else to a public IP"""
+
     async def resolve(host: str) -> List[str]:
         return hosts.get(host, [PUBLIC_IP])
+
     return resolve
 
 
 @pytest.fixture
 def guard() -> URLGuard:
     """URL guard whose resolver maps *.internal hosts to private addresses"""
-    return URLGuard(resolver=make_resolver({
-        "localhost": ["127.0.0.1", "::1"],
-        "intranet.internal": ["10.0.0.5"],
-        "metadata.internal": ["169.254.169.254"],
-        "mixed.internal": [PUBLIC_IP, "192.168.1.10"],
-    }))
+    return URLGuard(
+        resolver=make_resolver(
+            {
+                "localhost": ["127.0.0.1", "::1"],
+                "intranet.internal": ["10.0.0.5"],
+                "metadata.internal": ["169.254.169.254"],
+                "mixed.internal": [PUBLIC_IP, "192.168.1.10"],
+            }
+        )
+    )
 
 
-def mock_client(handler: Callable[[httpx.Request], httpx.Response], guard: URLGuard) -> httpx.AsyncClient:
+def mock_client(
+    handler: Callable[[httpx.Request], httpx.Response], guard: URLGuard
+) -> httpx.AsyncClient:
     """httpx client wired like the service's, but served by handler"""
     return httpx.AsyncClient(
         transport=httpx.MockTransport(handler),

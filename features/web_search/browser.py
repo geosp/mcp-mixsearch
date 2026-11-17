@@ -10,14 +10,14 @@ import logging
 from contextlib import asynccontextmanager
 from typing import AsyncIterator, Callable, Optional
 
-from playwright.async_api import Browser, Page, Playwright, async_playwright
+from playwright.async_api import Browser, Page, Playwright, ViewportSize, async_playwright
 
 from .url_safety import URLGuard
 
 logger = logging.getLogger(__name__)
 
 NAVIGATION_TIMEOUT_MS = 15_000
-VIEWPORT = {"width": 1920, "height": 1080}
+VIEWPORT: ViewportSize = {"width": 1920, "height": 1080}
 
 
 class BrowserManager:

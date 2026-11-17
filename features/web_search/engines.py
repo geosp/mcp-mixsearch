@@ -34,14 +34,15 @@ def strip_tags(text: str) -> str:
 
 class SearchEngine(Protocol):
     """A search backend"""
+
     name: str
 
-    async def search(self, query: str, filters: SearchFilters) -> List[SearchResult]:
-        ...
+    async def search(self, query: str, filters: SearchFilters) -> List[SearchResult]: ...
 
 
 class BraveApiEngine:
     """Official Brave Search API (https://api.search.brave.com)"""
+
     name = "BraveAPI"
     WEB_URL = "https://api.search.brave.com/res/v1/web/search"
     NEWS_URL = "https://api.search.brave.com/res/v1/news/search"
@@ -89,12 +90,15 @@ def convert_ddgs_result(item: Dict[str, Any], method: str) -> SearchResult:
         description = " | ".join(part for part in (item.get("source"), item.get("image")) if part)
         return SearchResult(title=title, url=item.get("url", ""), description=description)
     if method == "videos":
-        return SearchResult(title=title, url=item.get("content", ""), description=item.get("description", ""))
+        return SearchResult(
+            title=title, url=item.get("content", ""), description=item.get("description", "")
+        )
     return SearchResult(title=title, url=item.get("href", ""), description=item.get("body", ""))
 
 
 class DdgsEngine:
     """ddgs metasearch library"""
+
     name = "DDGS"
 
     def __init__(self, backend: str = "auto", ddgs_factory: Callable[[], Any] = DDGS):
@@ -126,6 +130,7 @@ def is_brave_url(url: str) -> bool:
 
 class BraveBrowserEngine:
     """Scrapes search.brave.com in the shared browser"""
+
     name = "Brave"
     SEARCH_URL = "https://search.brave.com/search"
     EXTRACT_JS = """
@@ -187,11 +192,13 @@ def parse_ddg_html(page: str, limit: int) -> List[SearchResult]:
         title_el = result.select_one(".result__title a")
         snippet_el = result.select_one(".result__snippet")
         if title_el and snippet_el and title_el.get("href"):
-            results.append(SearchResult(
-                title=title_el.get_text().strip(),
-                url=unwrap_ddg_redirect(title_el["href"]),
-                description=snippet_el.get_text().strip(),
-            ))
+            results.append(
+                SearchResult(
+                    title=title_el.get_text().strip(),
+                    url=unwrap_ddg_redirect(str(title_el["href"])),
+                    description=snippet_el.get_text().strip(),
+                )
+            )
         if len(results) >= limit:
             break
     return results
@@ -199,6 +206,7 @@ def parse_ddg_html(page: str, limit: int) -> List[SearchResult]:
 
 class DuckDuckGoHtmlEngine:
     """Scrapes the DuckDuckGo HTML results page"""
+
     name = "DuckDuckGo"
     SEARCH_URL = "https://html.duckduckgo.com/html/"
 
