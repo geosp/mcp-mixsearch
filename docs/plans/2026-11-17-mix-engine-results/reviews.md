@@ -64,3 +64,16 @@ Raw report: docs/reviews/2026-11-17-mix-engine-results/raw/impl-review-01-r1-con
 
 ## 2026-11-17 · done · phase 01
 Manual check: docs/demos/2026-11-17-mix-engine-results-p1/README.md (owner ran `uv run pytest -m live`: 3 passed, 1 skipped for no BRAVE_API_KEY).
+
+## 2026-11-17 · impl-review · phase 02 · round 1 · passed
+Diff: 6e49df85c83f9fbe41f96327b7378e8ebe4e43ac..215b063ba2a0dc21be5492649836b477032458a2
+Reviewers: contract ✅ (profile `small`: contract lens only)
+Raw report: docs/reviews/2026-11-17-mix-engine-results/raw/impl-review-02-r1-contract.md
+
+| ID | Sev | Lens | Finding | Resolution |
+| --- | --- | --- | --- | --- |
+| J1 | Nit | contract | README says URL case is ignored in dedupe; only scheme and host are lowercased (D2) | open |
+| J2 | Nit | contract | R10: missing `engines` key tested only for summaries, not `full_web_search` | open |
+| J3 | Nit | contract | Task 2.3: clean-checkout check has no evidence in the diff | open |
+| J4 | Nit | contract | instructions.md `source` section doesn't say non-web searches use fewer engines (R8) | open |
+| J5 | Nit | contract | Phase status still in-progress with 4/4 tasks | open |
