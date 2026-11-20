@@ -3,7 +3,7 @@ title: Build the app into the Docker image
 status: draft
 created: 2026-11-17
 updated: 2026-11-19
-design_review: { status: changes-requested, rounds: 1, last: 2026-11-17 }
+design_review: { status: changes-requested, rounds: 2, last: 2026-11-19 }
 approved: null
 adr_review: null
 ---

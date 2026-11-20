@@ -26,3 +26,27 @@ Raw reports: docs/reviews/2026-11-17-docker-image-pins-code/raw/design-review-01
 | F17 | Nit | zoom out | `docker-publish.yml` has no concurrency group; overlapping main pushes can leave `:main` on an older commit | fixed: What changes; notes.md#d5 step 1; task 4.3 |
 | F18 | Nit | fresh reader | R1, R2, R3, R5, R6 each hold two rules | accepted: each pair is one testable property; splitting adds IDs without clarity |
 | F19 | Nit | fresh reader | Small gaps: D3 migration line not given, "manual check" and `mcp-service-kit` not introduced, Impact lists README/tests that What changes doesn't, breaking change stated 4 times | fixed: D3 migration line, Terms (manual check, mcp-service-kit), What changes matches Impact, breaking change marked once in D3 |
+
+## 2026-11-19 · design-review · plan · round 2 · changes-requested
+Commit: 9bfd2c9eb45987e39039aca07db1a4f9d0cbd5ce
+Reviewers: fresh reader ✅ · zoom out ✅ (lenses that raised round 1 Majors, per the `small` profile)
+Raw reports: docs/reviews/2026-11-17-docker-image-pins-code/raw/design-review-02-*.md
+Round 1 fixes: none came back. The two-rules Nits on R1, R5, R6 stay closed (F18 accepted).
+
+| ID | Sev | Lens | Finding | Resolution |
+| --- | --- | --- | --- | --- |
+| G1 | Major | fresh reader | Summary's "serves only with `MCP_AUTH_ENABLED=false`" reads like auth is being turned off | open |
+| G2 | Major | fresh reader | Summary says PR #9 is unblocked and only tested images are pushed, but omits that the smoke test is not a required check | open |
+| G3 | Major | fresh reader | `MCP_AUTH_ENABLED` is never defined (what it controls, what refusing looks like) | open |
+| G4 | Major | fresh reader | R1's revision-label scenario: nothing says who checks it or whether metadata-action already sets the label | open |
+| G5 | Major | fresh reader | "pushes that same image" has no mechanism in plan.md (only in notes) | open |
+| G6 | Major | fresh reader | Rollout step 3 assumes deployments run from a git checkout | open |
+| G7 | Major | zoom out | Re-running an old publish run (or a `v*` tag on an older commit) moves `:main`/`:latest` back to older code | open |
+| G8 | Nit | zoom out | notes D5: `python -c` in the image needs `--entrypoint python` | open |
+| G9 | Nit | zoom out | D3: any custom `command` replaces `CMD --mode http` and falls back to stdio; `ENV MCP_TRANSPORT=http` is simpler | open |
+| G10 | Nit | zoom out | Rollout step 1 edits the tracked compose file, so step 3's `git pull` conflicts | open |
+| G11 | Nit | zoom out | Task 5.1 Verify grep passes vacuously | open |
+| G12 | Nit | zoom out | PR runs should cancel in progress, as ci-gate does | open |
+| G13 | Nit | zoom out | `playwright install --with-deps` leaves apt lists in its layer | open |
+| G14 | Nit | zoom out | D6: `PackageNotFoundError` when run from source without install | open |
+| G15 | Nit | fresh reader | Wording: two Summary sentences, Risks bullet 2 length, D3 stray space, build needs GitHub, manual-check timing, revert's "same command", uv pin file names, base image is current, minor vs major | open |
