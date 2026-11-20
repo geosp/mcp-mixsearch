@@ -7,22 +7,22 @@ Raw reports: docs/reviews/2026-11-17-docker-image-pins-code/raw/design-review-01
 
 | ID | Sev | Lens | Finding | Resolution |
 | --- | --- | --- | --- | --- |
-| F1 | Major | codebase fit, zoom out, fresh reader | Rollback: v1.1.0 compose has no `@ref` (downloads new main) and uses `:main`; a revert leaves deployments on the command-less compose with a `uvx` entrypoint | open |
-| F2 | Major | fresh reader | Summary omits the dev compose change (R5, D4) and that `MCP_AUTH_ENABLED=false` is required | open |
-| F3 | Major | fresh reader | `ci-ok`, the ruleset and `ci-gate` are used but never defined | open |
-| F4 | Major | fresh reader, zoom out | R1 scenario omits `MCP_AUTH_ENABLED=false`, and "that commit's package version" can't tell commits apart | open |
-| F5 | Major | fresh reader | The plan never says what the smoke test checks; R2's Firefox scenario has no named place to run | open |
-| F6 | Major | fresh reader | Unclear whether prod compose running with auth disabled is intended | open |
-| F7 | Major | fresh reader | Deployments on `:latest`/`:main` break at their next pull before Rollout step 2; source of the new compose not stated | open |
-| F8 | Major | fresh reader, zoom out | Rollout step 4 relies on the owner checking PR #9's smoke test; nothing enforces it | open |
-| F9 | Major | fresh reader, codebase fit | R3 covers the MCP server info, but no scenario or test checks it | open |
-| F10 | Nit | codebase fit, zoom out | Task 4.2 runs "its script" but no script file is named or listed in Impact | open |
-| F11 | Nit | codebase fit, zoom out | The pushed image comes from a second build, not the smoke-tested one | open |
-| F12 | Nit | codebase fit, zoom out | Copying README/LICENSE before the deps-only sync invalidates the deps and Firefox layers | open |
-| F13 | Nit | codebase fit, zoom out | `uv==0.13.5` is a second hand-bumped uv pin with no sync note | open |
-| F14 | Nit | codebase fit | `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` is dropped without saying so | open |
-| F15 | Nit | codebase fit | Task 5.1 misses stale `docker/README.md` text (UV_CACHE_DIR, git prerequisite, LXC versioned mode, …) | open |
-| F16 | Nit | codebase fit | Decision-log task covers D1 only; D3 changes a public interface | open |
-| F17 | Nit | zoom out | `docker-publish.yml` has no concurrency group; overlapping main pushes can leave `:main` on an older commit | open |
-| F18 | Nit | fresh reader | R1, R2, R3, R5, R6 each hold two rules | open |
-| F19 | Nit | fresh reader | Small gaps: D3 migration line not given, "manual check" and `mcp-service-kit` not introduced, Impact lists README/tests that What changes doesn't, breaking change stated 4 times | open |
+| F1 | Major | codebase fit, zoom out, fresh reader | Rollback: v1.1.0 compose has no `@ref` (downloads new main) and uses `:main`; a revert leaves deployments on the command-less compose with a `uvx` entrypoint | fixed: Rollout & rollback (v1.1.0 snippet with image and `@v1.1.0`; revert restores `command`) |
+| F2 | Major | fresh reader | Summary omits the dev compose change (R5, D4) and that `MCP_AUTH_ENABLED=false` is required | fixed: Summary |
+| F3 | Major | fresh reader | `ci-ok`, the ruleset and `ci-gate` are used but never defined | fixed: Terms (`ci-ok`, Ruleset) |
+| F4 | Major | fresh reader, zoom out | R1 scenario omits `MCP_AUTH_ENABLED=false`, and "that commit's package version" can't tell commits apart | fixed: R1 (auth env; revision label scenario) |
+| F5 | Major | fresh reader | The plan never says what the smoke test checks; R2's Firefox scenario has no named place to run | fixed: Terms › Smoke test; notes.md#d5 |
+| F6 | Major | fresh reader | Unclear whether prod compose running with auth disabled is intended | contested: prod already runs with auth off, the server has no auth provider and docker/README says to front it with a gateway; stated in Assumptions |
+| F7 | Major | fresh reader | Deployments on `:latest`/`:main` break at their next pull before Rollout step 2; source of the new compose not stated | fixed: Risks (auto-pull) and Rollout steps 1, 3 |
+| F8 | Major | fresh reader, zoom out | Rollout step 4 relies on the owner checking PR #9's smoke test; nothing enforces it | fixed: D5 and Rollout step 5 say the owner checks it |
+| F9 | Major | fresh reader, codebase fit | R3 covers the MCP server info, but no scenario or test checks it | fixed: R3 second scenario; task 1.1 |
+| F10 | Nit | codebase fit, zoom out | Task 4.2 runs "its script" but no script file is named or listed in Impact | fixed: Terms, Impact, tasks 4.1-4.2 (`.github/scripts/docker_smoke.sh`) |
+| F11 | Nit | codebase fit, zoom out | The pushed image comes from a second build, not the smoke-tested one | fixed: notes.md#d5 step 4; task 4.3 |
+| F12 | Nit | codebase fit, zoom out | Copying README/LICENSE before the deps-only sync invalidates the deps and Firefox layers | fixed: notes.md#d1 steps 3, 6 |
+| F13 | Nit | codebase fit, zoom out | `uv==0.13.5` is a second hand-bumped uv pin with no sync note | fixed: Assumptions; notes.md#d1 step 2; task 2.2 |
+| F14 | Nit | codebase fit | `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` is dropped without saying so | fixed: notes.md#d1 step 2 |
+| F15 | Nit | codebase fit | Task 5.1 misses stale `docker/README.md` text (UV_CACHE_DIR, git prerequisite, LXC versioned mode, …) | fixed: task 5.1 |
+| F16 | Nit | codebase fit | Decision-log task covers D1 only; D3 changes a public interface | fixed: task 5.3 |
+| F17 | Nit | zoom out | `docker-publish.yml` has no concurrency group; overlapping main pushes can leave `:main` on an older commit | fixed: What changes; notes.md#d5 step 1; task 4.3 |
+| F18 | Nit | fresh reader | R1, R2, R3, R5, R6 each hold two rules | accepted: each pair is one testable property; splitting adds IDs without clarity |
+| F19 | Nit | fresh reader | Small gaps: D3 migration line not given, "manual check" and `mcp-service-kit` not introduced, Impact lists README/tests that What changes doesn't, breaking change stated 4 times | fixed: D3 migration line, Terms (manual check, mcp-service-kit), What changes matches Impact, breaking change marked once in D3 |

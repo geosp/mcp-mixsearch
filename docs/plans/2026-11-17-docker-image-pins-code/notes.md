@@ -6,14 +6,19 @@ Current `Dockerfile` (on `main` at plan time): `python:3.14-slim`, an apt list w
 system libraries and fonts, `pip install uv`, `pip install playwright==1.64.1`,
 `playwright install firefox` and `install-deps firefox`, `ENTRYPOINT ["uvx"]`.
 
-Planned order, so a code-only change rebuilds only the last layers:
+Planned order, so a code-only or README change rebuilds only the last layers:
 
 1. Base image and the existing apt list (unchanged).
-2. `pip install --no-cache-dir uv==0.13.5`; `ENV UV_PYTHON_DOWNLOADS=never UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy PLAYWRIGHT_BROWSERS_PATH=/ms-playwright`.
-3. `WORKDIR /app`; copy `pyproject.toml`, `uv.lock`, `README.md`, `LICENSE` (hatchling reads the last two).
+2. `pip install --no-cache-dir uv==0.13.5`, with a comment naming `UV_VERSION` in `ci-gate.yml`
+   (and that file's header names the `Dockerfile`).
+   `ENV UV_PYTHON_DOWNLOADS=never UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy PLAYWRIGHT_BROWSERS_PATH=/ms-playwright`.
+   `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=true` is dropped: `--with-deps` installs the host
+   libraries Playwright checks for.
+3. `WORKDIR /app`; copy only `pyproject.toml` and `uv.lock`.
 4. `uv sync --locked --no-dev --no-install-project` (dependencies only).
 5. `/app/.venv/bin/playwright install --with-deps firefox` (D2).
-6. Copy `server.py`, `config.py`, `features/`; `uv sync --locked --no-dev --no-editable`.
+6. Copy `README.md`, `LICENSE` (hatchling reads both), `server.py`, `config.py`, `features/`;
+   `uv sync --locked --no-dev --no-editable`.
 7. `ENV PATH=/app/.venv/bin:$PATH`; `EXPOSE 3000`; `ENTRYPOINT ["mcp-mixsearch"]`; `CMD ["--mode", "http"]`.
 
 The server binds `0.0.0.0:3000` by default (`mcp_service_kit.config.BaseServerConfig`: `host`
@@ -26,16 +31,20 @@ which includes the tool instruction `.md` files under `features/web_search/`.
 
 ## D5 · Smoke test mechanics
 
-In `docker-publish.yml`, before the existing push step:
+`docker-publish.yml` after this plan:
 
-1. Build with `docker/build-push-action` and `load: true`, tagged `mcp-mixsearch:smoke`.
-2. R2: `docker run --rm --entrypoint python mcp-mixsearch:smoke -c '<print playwright version>'`,
-   compared with the version read from `uv.lock` on the runner; then a script that launches
-   headless Firefox, opens `about:blank` and exits.
-3. R1/R4: `docker run -d --network none -e MCP_AUTH_ENABLED=false mcp-mixsearch:smoke`, then poll
-   `/health` from inside the container with `docker exec … python -c` (urllib) for up to 60 s,
-   and compare its `version` with `pyproject.toml`.
-4. On failure, print `docker logs` and fail the job.
+1. `concurrency: { group: docker-publish-${{ github.ref }}, cancel-in-progress: false }`, so two
+   pushes to `main` publish in order.
+2. Build once with `docker/build-push-action`, `load: true`, `push: false`, and the tags and
+   labels from `docker/metadata-action` (which include `org.opencontainers.image.revision`).
+3. Run `.github/scripts/docker_smoke.sh <first tag>`. The script:
+   - R2: runs `python -c` in the image to print the `playwright` version and compares it with the
+     version in `uv.lock` on the runner; then launches headless Firefox, opens `about:blank` and
+     exits;
+   - R1, R4: `docker run -d --network none -e MCP_AUTH_ENABLED=false <image>`, then polls
+     `/health` from inside the container with `docker exec … python -c` (urllib) for up to 60 s;
+   - R3: compares `/health`'s `version` with `pyproject.toml`;
+   - on any failure prints `docker logs`, removes the container and exits non-zero.
+4. On non-PR events only: `docker push` each tag from step 2, so the pushed image is the tested one.
 
-The push step then builds again with `push: true` for non-PR events; the BuildKit cache from step 1
-makes it a re-tag, not a rebuild. Actions keep their existing tag pins in this workflow (non-goal).
+Actions keep their existing tag pins in this workflow (non-goal).
