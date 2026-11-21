@@ -3,8 +3,8 @@
 # token, and no secrets referenced anywhere in this file.
 # Pins: every action by full commit SHA, updated by Dependabot. uv, gitleaks,
 # actionlint and lychee are pinned below and bumped by hand (Dependabot cannot see them): for
-# uv, set UV_VERSION; for the others, set *_VERSION and *_SHA256 from the
-# release's checksums file.
+# uv, set UV_VERSION and the uv pin in the Dockerfile; for the others, set *_VERSION and
+# *_SHA256 from the release's checksums file.
 # The single required status check on main is `ci-ok`; its rule is in
 # .github/scripts/ci_gate.py (tested in tests/test_ci_gate.py).
 

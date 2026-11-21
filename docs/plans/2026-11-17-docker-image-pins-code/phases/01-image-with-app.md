@@ -25,8 +25,8 @@ and the publish workflow proves it starts before pushing it.
 
 ### 2. Image
 
-- [ ] 2.1 Add `.dockerignore` excluding `.venv`, `.git`, `docs`, `tests`, caches and `.env*` (R1). Verify: build context in `docker build` output is under ~1 MB.
-- [ ] 2.2 Rewrite the `Dockerfile` per notes.md#d1: locked deps, venv Playwright installs Firefox, app installed, entrypoint `mcp-mixsearch` with `ENV MCP_TRANSPORT=http` and no `CMD`; add the uv-version comment to the `ci-gate.yml` header (R1, R2, R4, D1, D2, D3). Verify: `docker build -t mcp-mixsearch:local .` succeeds.
+- [x] 2.1 Add `.dockerignore` excluding `.venv`, `.git`, `docs`, `tests`, caches and `.env*` (R1). Verify: build context in `docker build` output is under ~1 MB.
+- [x] 2.2 Rewrite the `Dockerfile` per notes.md#d1: locked deps, venv Playwright installs Firefox, app installed, entrypoint `mcp-mixsearch` with `ENV MCP_TRANSPORT=http` and no `CMD`; add the uv-version comment to the `ci-gate.yml` header (R1, R2, R4, D1, D2, D3). Verify: `docker build -t mcp-mixsearch:local .` succeeds.
 - [ ] 2.3 Update the `pyproject.toml` comment on the playwright pin and the `README.md` dependency line: the image now takes Playwright from `uv.lock` (D2). Verify: `grep -n playwright pyproject.toml README.md`.
 
 ### 3. Compose

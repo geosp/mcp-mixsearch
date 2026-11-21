@@ -1,6 +1,7 @@
 FROM python:3.14-slim
 
-# Install system dependencies (git + build tools + Playwright dependencies)
+# System packages: git (the mcp-service-kit dependency installs from a git tag at build time),
+# build tools for any dependency without a wheel, and Playwright's browser libraries and fonts
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         git \
@@ -35,21 +36,34 @@ RUN apt-get update \
         fonts-unifont \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv (universal package runner for MCP)
-RUN pip install --no-cache-dir uv
+# Keep in sync with UV_VERSION in .github/workflows/ci-gate.yml
+RUN pip install --no-cache-dir uv==0.13.5
 
-# Set environment variables for Playwright (before installing, so browsers land in /ms-playwright)
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-ENV PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=true
+ENV UV_PYTHON_DOWNLOADS=never \
+    UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
-# Pre-install Playwright and browsers to avoid runtime installation
-# Keep the version in sync with the playwright pin in pyproject.toml
-RUN pip install --no-cache-dir playwright==1.64.1 \
-    && playwright install firefox \
-    && playwright install-deps firefox
+WORKDIR /app
 
-# Expose the default MCP port (used by most servers)
+# Dependencies only, from uv.lock: this layer and Firefox are reused until uv.lock changes
+COPY pyproject.toml uv.lock ./
+RUN uv sync --locked --no-dev --no-install-project
+
+# Firefox from the locked playwright package, so the browser build always matches it
+RUN /app/.venv/bin/playwright install --with-deps firefox \
+    && rm -rf /var/lib/apt/lists/*
+
+# The app itself: a tag runs exactly this code, with nothing downloaded at startup
+COPY README.md LICENSE server.py config.py ./
+COPY features ./features
+RUN uv sync --locked --no-dev --no-editable
+
+ENV PATH=/app/.venv/bin:$PATH \
+    MCP_TRANSPORT=http
+
 EXPOSE 3000
 
-# Default entrypoint lets you pass in `uvx` args via Kubernetes or docker run
-ENTRYPOINT ["uvx"]
+# Serves HTTP on port 3000 (MCP_TRANSPORT=http). Arguments are server options, for example
+# `--port 3001`. The server has no auth provider: set MCP_AUTH_ENABLED=false to serve.
+ENTRYPOINT ["mcp-mixsearch"]
