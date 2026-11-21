@@ -1,0 +1,12 @@
+# Allowlist: the image gets only what it builds and runs.
+# Everything else (.venv, .git, .env*, docs, tests, caches) stays out of the build context.
+*
+!pyproject.toml
+!uv.lock
+!README.md
+!LICENSE
+!server.py
+!config.py
+!features/
+**/__pycache__
+**/*.py[cod]

@@ -9,6 +9,7 @@ Run it with:
 """
 
 import logging
+from importlib.metadata import version
 
 from fastmcp import FastMCP
 from mcp_service_kit import BaseMCPServer, BaseService, create_main_with_modes
@@ -21,7 +22,8 @@ from features.web_search.tool import register_tool
 
 logger = logging.getLogger(__name__)
 
-SERVICE_VERSION = "1.0.0"
+# Installed package version; running server.py without installing the package is unsupported
+SERVICE_VERSION = version("mcp-mixsearch")
 
 
 class MixSearchService(BaseService):

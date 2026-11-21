@@ -3,12 +3,13 @@ name: mcp-mixsearch
 
 services:
   mcp-mixsearch:
+    # The image holds the app; pin a release tag (e.g. :v1.2.0) to pin the code
     image: ghcr.io/geosp/mcp-mixsearch:main
     container_name: mcp-mixsearch
     ports:
       # Host port: override with MCP_HOST_PORT=3002 docker compose up -d
       - "${MCP_HOST_PORT:-3000}:3000"
     environment:
+      # The server has no auth provider; put an authenticating gateway in front
       - MCP_AUTH_ENABLED=false
-    command: ["mcp-mixsearch@git+https://github.com/geosp/mcp-mixsearch.git", "--mode", "http"]
     restart: unless-stopped

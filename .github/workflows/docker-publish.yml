@@ -2,10 +2,17 @@ name: Build and Push Docker Image
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
     tags: [ 'v*.*.*' ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
+
+# A new push to a PR cancels its older run. Every commit on main or a tag gets its own group, so
+# no run is cancelled and every sha tag is pushed (a shared group keeps only one pending run).
+# The tip check in the push step keeps main and latest from moving back.
+concurrency:
+  group: docker-publish-${{ github.ref }}-${{ github.event_name == 'pull_request' && 'pr' || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   REGISTRY: ghcr.io
@@ -22,43 +29,69 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          # `latest` follows main only; version tags never move it
+          flavor: |
+            latest=false
+          tags: |
+            # Branch-based tags
+            type=ref,event=branch
+
+            # Pull request tags
+            type=ref,event=pr
+
+            # Semantic version tags (when tagging with v1.2.3)
+            type=ref,event=tag
+
+            # Additional semver patterns
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+
+            # SHA-based tags for uniqueness
+            type=sha
+
+            # Latest tag: pushes to the default branch only
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      # Build once and load it locally: the image that is tested is the image that is pushed
+      - name: Build Docker image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          push: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Smoke test
+        env:
+          IMAGE: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+          EXPECTED_REVISION: ${{ github.sha }}
+        run: .github/scripts/docker_smoke.sh "$IMAGE"
+
       - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels)
-        id: meta
-        uses: docker/metadata-action@v6
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            # Branch-based tags
-            type=ref,event=branch
-            
-            # Pull request tags  
-            type=ref,event=pr
-            
-            # Semantic version tags (when tagging with v1.2.3)
-            type=ref,event=tag
-            
-            # Additional semver patterns
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            
-            # SHA-based tags for uniqueness
-            type=sha
-            
-            # Latest tag for most recent release
-            latest
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+      # main and latest move only to the tip of main, so re-running an old run can't move them
+      # back; sha and version tags are always pushed (.github/scripts/select_push_tags.py)
+      - name: Push the tested image
+        if: github.event_name != 'pull_request'
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+          REPO_URL: https://github.com/${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          tags="$(python3 .github/scripts/select_push_tags.py)"
+          for tag in $tags; do
+            docker push "$tag"
+          done
