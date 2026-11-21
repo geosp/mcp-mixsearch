@@ -28,7 +28,7 @@ dependencies = [
     "pydantic>=2.14",
     "pydantic-settings>=2.16",
     # Pinned exactly; the Docker image installs Firefox with this locked version (uv.lock)
-    "playwright==1.64.1",
+    "playwright==1.65.2",
     "beautifulsoup4>=4.15.0",
     "lxml>=6.1.3",
     "httpx>=0.28.1",
