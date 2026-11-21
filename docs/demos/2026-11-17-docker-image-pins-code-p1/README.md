@@ -2,10 +2,10 @@
 
 Plan: `docs/plans/2026-11-17-docker-image-pins-code`, phase 01 (image with the app built in).
 
-- **Result:** pass before merge. The image starts and answers `/health` with no network, and a real search through `/mcp` returns fused results. The revision-label read after merge is still to do (below).
+- **Result:** pass. Before merge, the image started and answered `/health` with no network, and a real search through `/mcp` returned fused results. After merge, the pushed `:main` carries the merge commit in its revision label.
 - **Machine:** AMD Ryzen AI Max+ 395 with Radeon 8060S (integrated GPU), Fedora Linux 44, kernel 7.3.3-200.fc44.x86_64, Docker 29.9.3.
 - **Versions:** commit `f1a2f4e` (branch `feat/14-docker-image-pins-code`). In the image: Python 3.14.10, mcp-mixsearch 1.1.0, playwright 1.64.1, ddgs 9.16.1, fastmcp 4.1.4.
-- **Who ran it:** an agent, delegated by the owner. The owner runs the post-merge step.
+- **Who ran it:** an agent, delegated by the owner, before merge. The owner and the agent ran the post-merge step.
 - **Commands and input:** below. The search query is the fixed `python programming language`, `limit` 5. No `BRAVE_API_KEY` was set.
 
 ## Before merge
@@ -36,4 +36,9 @@ docker inspect -f '{{ index .Config.Labels "org.opencontainers.image.revision" }
 git rev-parse origin/main
 ```
 
-- **Result:** _to be filled in after merge_.
+Run on 2026-11-21 after PR #15 merged as `795ce58`:
+
+- The owner's first pull came at the same moment as the publish run's push (finished 19:38:22 UTC). It got the old image (digest `sha256:0218b119…`), labelled `a7ac88c`, the commit before the merge.
+- The registry then showed `main`, `latest` and `sha-795ce58` on one digest, `sha256:9841f31a…`. Each had the revision label `795ce58519cec4c409efa2562bedf205a3b21607` (`docker buildx imagetools inspect`).
+- A second `docker pull` returned the same label, equal to `git rev-parse HEAD` on `main`.
+- **Result:** pass. Publish run: `44941819809`.

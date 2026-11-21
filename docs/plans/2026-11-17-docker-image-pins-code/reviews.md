@@ -74,7 +74,7 @@ Raw report: docs/reviews/2026-11-17-docker-image-pins-code/raw/impl-review-01-co
 | I12 | Nit | contract | docs | `docker/README.md` uses `:v1.1.0` as a pinned example, which won't start with the new compose | fixed: docker/README.md examples use `:v1.2.0` |
 | I13 | Nit | contract | D3 | CHANGELOG migration example differs in form from D3 | accepted: same meaning; the compose form is clearer in a changelog |
 | I14 | Nit | contract | plan | Phases table shows 0/14 | fixed: Phases table |
-| I15 | Nit | contract | phase | Tasks 4.3 and 6.2 unticked | open: task 6.2's post-merge label read |
+| I15 | Nit | contract | phase | Tasks 4.3 and 6.2 unticked | fixed: task 6.2 done; docs/demos/2026-11-17-docker-image-pins-code-p1 |
 
 ## 2026-11-21 · impl-review · phase 01 · round 2 · changes-requested
 Diff: 3057bac1dabfe64b7511a7cd52bc6bb5eb45a51b..a3214a7294d607adf5c62e73ae32f9739d1fc078
@@ -96,4 +96,11 @@ Round 1 fixes: none came back. Closed round 1 findings (I6, I9, I10, I13) stay c
 | J10 | Nit | contract | R1 | PR `github.sha` vs metadata-action's revision not yet observed | fixed: PR #15 run 44940811871: revision label equals github.sha (ad09c7b) |
 | J11 | Nit | contract | R5 | No automated compose check (as I6) | fixed: test_compose_files_run_the_image_as_built |
 | J12 | Nit | contract | R1 | Lazy downloads on the search path aren't run offline | accepted: searching needs the network by design; R1 is about code, which startup alone loads |
-| J13 | Nit | contract | phase | Tasks 4.3 and 6.2 open (as I15) | open: task 6.2's post-merge label read |
+| J13 | Nit | contract | phase | Tasks 4.3 and 6.2 open (as I15) | fixed: task 6.2 done; docs/demos/2026-11-17-docker-image-pins-code-p1 |
+
+## 2026-11-21 · done · phase 01
+Merged in PR #15 (`795ce58`). Manual check passed: docs/demos/2026-11-17-docker-image-pins-code-p1/README.md.
+
+## 2026-11-21 · ADR review
+ADRs in force reviewed: ADR-0001 (search fuses parallel engines with RRF), not affected.
+Created: ADR-0002 (docs/adrs/0002-docker-image-holds-the-app.md), recording D1, D3 and D7.
