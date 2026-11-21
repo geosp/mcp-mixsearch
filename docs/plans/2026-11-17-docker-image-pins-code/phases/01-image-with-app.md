@@ -1,7 +1,7 @@
 ---
 phase: 1
 title: Image with the app built in
-status: impl-reviewed
+status: done
 branch: feat/14-docker-image-pins-code
 base: 3057bac1dabfe64b7511a7cd52bc6bb5eb45a51b
 delivers: [R1, R2, R3, R4, R5, R6, R7]
@@ -49,4 +49,4 @@ and the publish workflow proves it starts before pushing it.
 ### 6. Verification
 
 - [x] 6.1 Run the AGENTS.md checks. Verify: all pass.
-- [ ] 6.2 Manual check in `docs/demos/2026-11-17-docker-image-pins-code-p1/`: build the image, before merge, start it with `--network none` and fetch `/health` from inside (R1), then start it normally and run a search through `/mcp` (R4); after merge, read the pushed `:main` image's revision label (R1). Verify: the record follows docs/demos/README.md.
+- [x] 6.2 Manual check in `docs/demos/2026-11-17-docker-image-pins-code-p1/`: build the image, before merge, start it with `--network none` and fetch `/health` from inside (R1), then start it normally and run a search through `/mcp` (R4); after merge, read the pushed `:main` image's revision label (R1). Verify: the record follows docs/demos/README.md.

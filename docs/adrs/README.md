@@ -6,3 +6,4 @@ ADRs record decisions that should outlive the plan that made them. `impl-plan` p
 - Smaller decisions, and decisions made outside a plan, go in the [decision log](../decision-log.md).
 
 - [ADR-0001](0001-fuse-parallel-engines-with-rrf.md): search fuses parallel engines with reciprocal rank fusion.
+- [ADR-0002](0002-docker-image-holds-the-app.md): the Docker image holds the app, and a tag pins its code.

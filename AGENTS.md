@@ -6,7 +6,7 @@ Shared instructions for every coding agent working in this repository. Claude Co
 
 MCP server for web search with multi-engine support and content extraction
 
-**Status:** the engine-mixing plan (`docs/plans/2026-11-17-mix-engine-results`) is closed; no plan is active. Update this line whenever a plan closes.
+**Status:** the Docker image plan (`docs/plans/2026-11-17-docker-image-pins-code`) is closed; no plan is active. Update this line whenever a plan closes.
 
 ## Read this first
 
