@@ -35,18 +35,20 @@ Round 1 fixes: none came back. The two-rules Nits on R1, R5, R6 stay closed (F18
 
 | ID | Sev | Lens | Finding | Resolution |
 | --- | --- | --- | --- | --- |
-| G1 | Major | fresh reader | Summary's "serves only with `MCP_AUTH_ENABLED=false`" reads like auth is being turned off | open |
-| G2 | Major | fresh reader | Summary says PR #9 is unblocked and only tested images are pushed, but omits that the smoke test is not a required check | open |
-| G3 | Major | fresh reader | `MCP_AUTH_ENABLED` is never defined (what it controls, what refusing looks like) | open |
-| G4 | Major | fresh reader | R1's revision-label scenario: nothing says who checks it or whether metadata-action already sets the label | open |
-| G5 | Major | fresh reader | "pushes that same image" has no mechanism in plan.md (only in notes) | open |
-| G6 | Major | fresh reader | Rollout step 3 assumes deployments run from a git checkout | open |
-| G7 | Major | zoom out | Re-running an old publish run (or a `v*` tag on an older commit) moves `:main`/`:latest` back to older code | open |
-| G8 | Nit | zoom out | notes D5: `python -c` in the image needs `--entrypoint python` | open |
-| G9 | Nit | zoom out | D3: any custom `command` replaces `CMD --mode http` and falls back to stdio; `ENV MCP_TRANSPORT=http` is simpler | open |
-| G10 | Nit | zoom out | Rollout step 1 edits the tracked compose file, so step 3's `git pull` conflicts | open |
-| G11 | Nit | zoom out | Task 5.1 Verify grep passes vacuously | open |
-| G12 | Nit | zoom out | PR runs should cancel in progress, as ci-gate does | open |
-| G13 | Nit | zoom out | `playwright install --with-deps` leaves apt lists in its layer | open |
-| G14 | Nit | zoom out | D6: `PackageNotFoundError` when run from source without install | open |
-| G15 | Nit | fresh reader | Wording: two Summary sentences, Risks bullet 2 length, D3 stray space, build needs GitHub, manual-check timing, revert's "same command", uv pin file names, base image is current, minor vs major | open |
+| G1 | Major | fresh reader | Summary's "serves only with `MCP_AUTH_ENABLED=false`" reads like auth is being turned off | fixed: Summary (no auth provider, gateway) |
+| G2 | Major | fresh reader | Summary says PR #9 is unblocked and only tested images are pushed, but omits that the smoke test is not a required check | fixed: Summary last sentence |
+| G3 | Major | fresh reader | `MCP_AUTH_ENABLED` is never defined (what it controls, what refusing looks like) | fixed: Terms › `MCP_AUTH_ENABLED` |
+| G4 | Major | fresh reader | R1's revision-label scenario: nothing says who checks it or whether metadata-action already sets the label | fixed: Terms › Revision label, Manual check; R1 scenario; task 6.2 |
+| G5 | Major | fresh reader | "pushes that same image" has no mechanism in plan.md (only in notes) | fixed: D5 |
+| G6 | Major | fresh reader | Rollout step 3 assumes deployments run from a git checkout | fixed: Rollout step 3 |
+| G7 | Major | zoom out | Re-running an old publish run (or a `v*` tag on an older commit) moves `:main`/`:latest` back to older code | fixed: new R7 and D7; notes.md#d5 steps 2, 4; tasks 4.3, 5.1, 5.3 |
+| G8 | Nit | zoom out | notes D5: `python -c` in the image needs `--entrypoint python` | fixed: notes.md#d5 step 3 |
+| G9 | Nit | zoom out | D3: any custom `command` replaces `CMD --mode http` and falls back to stdio; `ENV MCP_TRANSPORT=http` is simpler | fixed: D3 (`ENV MCP_TRANSPORT=http`, no `CMD`); R4 second scenario; notes.md#d1 step 7; tasks 2.2, 4.1 |
+| G10 | Nit | zoom out | Rollout step 1 edits the tracked compose file, so step 3's `git pull` conflicts | fixed: Rollout step 3 |
+| G11 | Nit | zoom out | Task 5.1 Verify grep passes vacuously | fixed: task 5.1 |
+| G12 | Nit | zoom out | PR runs should cancel in progress, as ci-gate does | fixed: notes.md#d5 step 1 |
+| G13 | Nit | zoom out | `playwright install --with-deps` leaves apt lists in its layer | fixed: notes.md#d1 step 5 |
+| G14 | Nit | zoom out | D6: `PackageNotFoundError` when run from source without install | accepted: running without the package installed is unsupported; stated in D6 |
+| G15 | Nit | fresh reader | Wording: two Summary sentences, Risks bullet 2 length, D3 stray space, build needs GitHub, manual-check timing, revert's "same command", uv pin file names, base image is current, minor vs major | fixed: Summary, Risks, D3, Terms, Assumptions, Rollout steps 3-4 and revert paragraph |
+
+## 2026-11-21 · approved · plan (and phase 01)

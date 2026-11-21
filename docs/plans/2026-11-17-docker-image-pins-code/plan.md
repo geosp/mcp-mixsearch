@@ -1,10 +1,10 @@
 ---
 title: Build the app into the Docker image
-status: draft
+status: approved
 created: 2026-11-17
-updated: 2026-11-19
-design_review: { status: changes-requested, rounds: 2, last: 2026-11-19 }
-approved: null
+updated: 2026-11-21
+design_review: { status: passed, rounds: 2, last: 2026-11-21 }
+approved: 2026-11-21
 adr_review: null
 ---
 
@@ -15,16 +15,17 @@ adr_review: null
 A published image tag (`:main`, `:latest`, `:v1.1.0`) pins only Python, uv and Firefox. Each
 container downloads the app from the default branch at startup, so a restart can quietly run newer
 code. This plan installs the app into the image at build time from `uv.lock`, so a tag pins the
-code (R1). The venv's Playwright, locked in `uv.lock`, installs Firefox, replacing the separate
-`Dockerfile` pin (R2); this unblocks Dependabot PR #9. The image starts the HTTP server by
-default (R4) but, as today, serves only with `MCP_AUTH_ENABLED=false`. `/health` and the server
-info report the installed version (R3). Both compose files run the image as built, so the dev
-compose loses its source mount (R5, D4). The publish workflow smoke-tests each image and pushes
-only the tested one (R6).
+code (R1). Firefox is installed by the Playwright that `uv.lock` locks, replacing the `Dockerfile`
+pin, so Dependabot PR #9 can merge safely (R2). The image runs in HTTP mode (R4). As today, it
+serves only with `MCP_AUTH_ENABLED=false` behind a gateway, since the server has no auth provider.
+`/health` reports the installed version (R3). The compose files run the image as built; the dev
+compose loses its source mount (R5, D4). The publish workflow pushes only the image it smoke-tested
+(R6), and moves `:main`/`:latest` only to the tip of `main` (R7). The smoke test is not a required
+check, so the owner reads it before merging (D5).
 
 ```text
 build: uv.lock ─► uv sync (app + deps) ─► venv playwright installs Firefox ─► smoke test ─► push
-run:   docker run <tag>  ─►  mcp-mixsearch --mode http   (no download at startup)
+run:   docker run <tag>  ─►  mcp-mixsearch, MCP_TRANSPORT=http   (no download at startup)
 ```
 
 Main risk: **BREAKING** for running deployments (D3). A compose file that still passes the old
@@ -43,11 +44,12 @@ scraping. Issue #14 has the full report.
 
 - The `Dockerfile` copies the source and installs it with `uv sync --locked --no-dev`, then
   installs Firefox with the venv's own `playwright`. The separate `pip install playwright` goes.
-- The entrypoint becomes `mcp-mixsearch`, with default arguments `--mode http` (D3).
+- The entrypoint becomes `mcp-mixsearch`, and the image sets `MCP_TRANSPORT=http` (D3).
 - Both compose files run the image as built: no `command`, no source mount.
 - `/health` and the MCP server info report the installed package version, not a hard-coded `1.0.0`.
 - `docker-publish.yml` runs the smoke test on the built image and pushes that same image; a
-  `concurrency` group keeps two pushes to `main` from publishing out of order.
+  `concurrency` group queues pushes to `main` in order, and `main`/`latest` are pushed only from
+  the tip of `main` (R7).
 - `server.py` gets a test for the reported version (R3).
 - A `.dockerignore` keeps local files (`.venv`, `.git`, `docs`, `tests`) out of the build.
 - `docker/README.md`, `CHANGELOG.md`, `docs/decision-log.md`, the root `README.md` dependency
@@ -62,8 +64,13 @@ scraping. Issue #14 has the full report.
 
 ## Terms
 
-- **Image tag:** a name under `ghcr.io/geosp/mcp-mixsearch` that `docker-publish.yml` pushes:
-  `main`, `latest` and `sha-<short sha>` on every push to `main`; version tags on a `v*` git tag.
+- **Image tag:** a name under `ghcr.io/geosp/mcp-mixsearch` that `docker-publish.yml` pushes.
+  Today: `main`, `latest` and `sha-<short sha>` on every push to `main`; version tags, `latest`
+  and `sha-…` on a `v*` git tag. **Moving tags** are `main` and `latest`.
+- **`MCP_AUTH_ENABLED`:** a server setting (default `true`). In HTTP mode with it `true`, the
+  server exits at startup, because it has no auth provider; `false` serves without auth.
+- **Revision label:** `org.opencontainers.image.revision`, the commit SHA that
+  `docker/metadata-action` already writes into each image's labels (`docker-publish.yml`).
 - **Smoke test:** `.github/scripts/docker_smoke.sh`, run by `docker-publish.yml` on the built
   image. It checks the Playwright version and a Firefox launch (R2), a start with no network and
   `/health` (R1, R4), and the reported version (R3). Any failure exits non-zero.
@@ -73,7 +80,8 @@ scraping. Issue #14 has the full report.
   changes them.
 - **`mcp-service-kit`:** the library the server is built on, installed from a git tag, so the
   build (not startup) needs `git` and GitHub access.
-- **Manual check:** a run by the owner on real input, recorded in `docs/demos/`.
+- **Manual check:** a run by the owner on real input, recorded in `docs/demos/` (task 6.2). Part
+  of it runs before merge, and the revision-label read runs after.
 - **Prod compose / dev compose:** `docker/prod/docker-compose.yml` (published image) and
   `docker/mcp/docker-compose.yml` (built locally).
 
@@ -85,7 +93,7 @@ Starting the image must never download code: the app and its Python dependencies
 The commit an image holds is named by its `org.opencontainers.image.revision` label, which
 `docker/metadata-action` sets.
 - **Given** a built image, **when** it starts with `--network none` and `MCP_AUTH_ENABLED=false`, and `/health` is fetched from inside the container, **then** it answers 200.
-- **Given** an image pushed from commit C, **when** `docker inspect` reads its revision label, **then** it is C.
+- **Given** an image pushed from commit C, **when** the manual check reads its revision label with `docker inspect`, **then** it is C.
 
 ### R2 · Playwright and Firefox come from uv.lock
 
@@ -100,10 +108,12 @@ build that version installs.
 - **Given** the installed package is version X, **when** `/health` is fetched, **then** its `version` is X.
 - **Given** the installed package is version X, **when** the MCP server info is read, **then** its version is X.
 
-### R4 · The image serves HTTP by default
+### R4 · The image serves HTTP
 
-With no command given, the image must start the server in HTTP mode on port 3000.
+The image must start the server in HTTP mode, on port 3000 unless an option changes it, whether or
+not options are passed.
 - **Given** `docker run -e MCP_AUTH_ENABLED=false -p 3000:3000 <image>`, **when** `/health` is fetched, **then** it answers 200.
+- **Given** `docker run -e MCP_AUTH_ENABLED=false -p 3001:3001 <image> --port 3001`, **when** `/health` is fetched on 3001, **then** it answers 200.
 - **Given** `docker run <image> --help`, **when** it runs, **then** it prints the server's usage and exits 0.
 
 ### R5 · Compose files run the image as built
@@ -117,6 +127,13 @@ Neither compose file may override the command or mount source code.
 smoke test and pushes nothing.
 - **Given** an image whose server fails to start, **when** the workflow runs, **then** the job fails before the push step.
 - **Given** a pull request, **when** the workflow runs, **then** the smoke test runs and nothing is pushed.
+
+### R7 · Moving tags point only at the tip of main
+
+`docker-publish.yml` must push `main` and `latest` only from a run whose commit is still the tip of
+`main`. Commit and version tags are always pushed.
+- **Given** commit B is on `main`, **when** the run for an older commit A is re-run and passes, **then** it pushes `sha-A` but not `main` or `latest`.
+- **Given** a `v*` tag on any commit, **when** its run passes, **then** it pushes the version tags and `sha-…`, but not `latest`.
 
 ## Decisions
 
@@ -135,11 +152,12 @@ the lock together. Rejected: a second pin in the `Dockerfile` (it drifts, as PR 
 
 ### D3 · Entrypoint is the app; clean break
 
-`ENTRYPOINT ["mcp-mixsearch"]`, `CMD ["--mode", "http"]`. **BREAKING:** old `uvx`-style commands
-fail. The changelog's migration line: "Remove `command:` from your compose file; to pass options,
-give only the server's arguments, for example `--mode http --port 3001`."
- Rejected: a shim that detects and drops old
-`uvx` arguments (code to maintain for one deployment).
+`ENTRYPOINT ["mcp-mixsearch"]`, `ENV MCP_TRANSPORT=http`, no `CMD`. Options passed as a command
+keep HTTP mode, because `--mode` defaults to `MCP_TRANSPORT`. **BREAKING:** old `uvx`-style commands
+fail. The changelog's migration line: "Remove `command:` from your compose file, or keep only the
+server's options, for example `--port 3001`." Rejected: `CMD ["--mode", "http"]`, because any
+custom command replaces it and falls back to stdio. Rejected: a shim that drops old `uvx`
+arguments (code to maintain for one deployment).
 
 ### D4 · Dev compose builds and runs the image
 
@@ -149,39 +167,52 @@ publishes. Live editing uses `uv run mcp-mixsearch` on the host. Rejected: keepi
 
 ### D5 · Smoke test in the publish workflow, not in ci-ok
 
-The smoke test runs in `docker-publish.yml` on PRs and pushes, and gates the push. `ci-ok` and the
+The smoke test runs in `docker-publish.yml` on PRs and pushes, and gates the push. The workflow
+builds the image once, tests it, then pushes those same tags with `docker push`. `ci-ok` and the
 ruleset stay unchanged, so a failing smoke test on a PR does not block its merge; the owner checks
 it. Rejected: a `ci-gate` job, because every PR would wait ~3–5 min for a Firefox image build.
 Rejected: no CI change, because a broken image would be pushed. Details: notes.md#d5
 
 ### D6 · Version from package metadata
 
-`server.py` reads the version with `importlib.metadata.version("mcp-mixsearch")`. Rejected:
+`server.py` reads the version with `importlib.metadata.version("mcp-mixsearch")`. Running
+`server.py` without the package installed is not supported; `uv run` always installs it. Rejected:
 keeping a hard-coded constant (it already drifted: `1.0.0` on v1.1.0).
+
+### D7 · Move `main` and `latest` only from the tip of main
+
+Before pushing the moving tags, the workflow compares its commit with `git ls-remote origin
+refs/heads/main` and skips them if they differ. `latest` is set only on `main` pushes, as
+`docker/README.md` already describes it ("`latest` follows `main`"). Rejected: relying on the
+`concurrency` group alone (a re-run of an old run starts alone and passes it).
 
 ## Assumptions
 
-- Every runtime dependency installs on `python:3.14-slim` (amd64) at build time; `git` stays in the image for the `mcp-service-kit` git dependency.
-- uv is installed with `pip install uv==0.13.5`, the `UV_VERSION` that `ci-gate.yml` pins. A comment in each file names the other.
-- `MCP_AUTH_ENABLED=false` stays out of the image. Started without it, the server refuses to serve, which is the safe default.
-- The compose files and the smoke test set `MCP_AUTH_ENABLED=false`. This is how prod runs today: the server has no auth provider, and `docker/README.md` says to put an authenticating gateway in front.
+- Every runtime dependency installs on `python:3.14-slim` (amd64), the current base image. `git` stays in the image for the `mcp-service-kit` git dependency.
+- uv is installed with `pip install uv==0.13.5`, the `UV_VERSION` that `ci-gate.yml` pins. A comment in the `Dockerfile` names `ci-gate.yml`, and the `ci-gate.yml` header names the `Dockerfile`.
+- `MCP_AUTH_ENABLED=false` stays out of the image, so an image started without it exits: the safe default.
+- The compose files and the smoke test set `MCP_AUTH_ENABLED=false`, as prod does today.
+- Prod sits behind an authenticating gateway, as `docker/README.md` advises.
 - The image builds and runs as root, as it does today.
 
 ## Risks
 
 - A running deployment pulls the new `:main` with the old compose command and fails to start → Rollout updates the compose file in the same step as the pull; the changelog says so.
-- A deployment that pulls `:main` or `:latest` automatically breaks at its next pull → before merging, pin it to `:v1.1.0` with the v1.1.0 rollback compose below, and move it to the new compose after the merge.
+- A deployment that pulls `:main` or `:latest` automatically breaks at its next pull → before merging, pin it to the v1.1.0 rollback compose below.
+- That pinned deployment stays on v1.1.0 → after the merge, move it to the new compose (Rollout step 3).
 - The image grows by the venv (~100–200 MB) → accepted: startup no longer downloads the same packages.
 - A dependency without a Python 3.14 wheel needs compilers → `build-essential` stays in the apt list.
-- The smoke test passes but a real search fails → the manual check runs a search through `/mcp`.
+- The smoke test passes but a real search fails → the manual check runs a search through `/mcp` before the merge.
 
 ## Rollout & rollback
 
 1. Before merging: pin any auto-pulling deployment to the v1.1.0 rollback compose below.
 2. Merge. `docker-publish.yml` pushes the new `:main`, `:latest` and `sha-…` tags.
-3. On each deployment, in one step: `git pull` the repository (new `docker/prod/docker-compose.yml`,
-   no `command`), then `docker compose pull && docker compose up -d`.
-4. The owner tags a release (minor or major, owner's choice) when ready.
+3. On each deployment, in one step: get the new `docker/prod/docker-compose.yml` (no `command`).
+   In a checkout: `git checkout -- docker/prod/docker-compose.yml && git pull`. Elsewhere: copy the
+   file from `main`. Then `docker compose pull && docker compose up -d`.
+4. The owner tags a release when ready. Minor or major is the owner's call: only image
+   deployments break, and MCP clients see no change.
 5. Rebase PR #9 (`@dependabot rebase`). Its smoke test is not a required check (D5), so the owner
    confirms it passed before merging.
 
@@ -193,8 +224,10 @@ Rollback to v1.1.0: in `docker/prod/docker-compose.yml`, set both the image and 
     command: ["mcp-mixsearch@git+https://github.com/geosp/mcp-mixsearch.git@v1.1.0", "--mode", "http"]
 ```
 
-Reverting the merge commit republishes `:main` with the `uvx` entrypoint, so every deployment on
-`:main` must get the same `command` line back in the same step.
+Reverting the merge commit republishes `:main` with the `uvx` entrypoint. Every deployment on
+`:main` must then get the v1.1.0 compose's `command` line back
+(`["mcp-mixsearch@git+https://github.com/geosp/mcp-mixsearch.git", "--mode", "http"]`) in the
+same step.
 
 ## Open questions
 
@@ -216,6 +249,6 @@ Reverting the merge commit republishes `:main` with the `uvx` entrypoint, so eve
 
 | Phase | Title | Status | Tasks |
 | --- | --- | --- | --- |
-| 01 | Image with the app built in | draft | 0/14 |
+| 01 | Image with the app built in | approved | 0/14 |
 
 ## Decision log

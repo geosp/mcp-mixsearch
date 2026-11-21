@@ -16,10 +16,12 @@ Planned order, so a code-only or README change rebuilds only the last layers:
    libraries Playwright checks for.
 3. `WORKDIR /app`; copy only `pyproject.toml` and `uv.lock`.
 4. `uv sync --locked --no-dev --no-install-project` (dependencies only).
-5. `/app/.venv/bin/playwright install --with-deps firefox` (D2).
+5. `/app/.venv/bin/playwright install --with-deps firefox && rm -rf /var/lib/apt/lists/*` (D2);
+   `--with-deps` runs `apt-get`, so its lists are removed in the same layer.
 6. Copy `README.md`, `LICENSE` (hatchling reads both), `server.py`, `config.py`, `features/`;
    `uv sync --locked --no-dev --no-editable`.
-7. `ENV PATH=/app/.venv/bin:$PATH`; `EXPOSE 3000`; `ENTRYPOINT ["mcp-mixsearch"]`; `CMD ["--mode", "http"]`.
+7. `ENV PATH=/app/.venv/bin:$PATH MCP_TRANSPORT=http`; `EXPOSE 3000`; `ENTRYPOINT ["mcp-mixsearch"]`;
+   no `CMD` (D3).
 
 The server binds `0.0.0.0:3000` by default (`mcp_service_kit.config.BaseServerConfig`: `host`
 default `"0.0.0.0"`, `port` default `3000`), so no host flag is needed. With auth enabled (the
@@ -33,12 +35,13 @@ which includes the tool instruction `.md` files under `features/web_search/`.
 
 `docker-publish.yml` after this plan:
 
-1. `concurrency: { group: docker-publish-${{ github.ref }}, cancel-in-progress: false }`, so two
-   pushes to `main` publish in order.
-2. Build once with `docker/build-push-action`, `load: true`, `push: false`, and the tags and
+1. `concurrency: { group: docker-publish-${{ github.ref }}, cancel-in-progress: ${{ github.event_name == 'pull_request' }} }`:
+   pushes to `main` queue in order; a new PR push cancels its older run, as in `ci-gate.yml`.
+2. Metadata tags: replace the bare `latest` with `type=raw,value=latest,enable={{is_default_branch}}`
+   (R7). Build once with `docker/build-push-action`, `load: true`, `push: false`, and the tags and
    labels from `docker/metadata-action` (which include `org.opencontainers.image.revision`).
 3. Run `.github/scripts/docker_smoke.sh <first tag>`. The script:
-   - R2: runs `python -c` in the image to print the `playwright` version and compares it with the
+   - R2: runs `docker run --entrypoint python <image> -c …` (the entrypoint is the server) to print the `playwright` version and compares it with the
      version in `uv.lock` on the runner; then launches headless Firefox, opens `about:blank` and
      exits;
    - R1, R4: `docker run -d --network none -e MCP_AUTH_ENABLED=false <image>`, then polls
@@ -46,5 +49,7 @@ which includes the tool instruction `.md` files under `features/web_search/`.
    - R3: compares `/health`'s `version` with `pyproject.toml`;
    - on any failure prints `docker logs`, removes the container and exits non-zero.
 4. On non-PR events only: `docker push` each tag from step 2, so the pushed image is the tested one.
+   Before pushing `main` or `latest`, compare `github.sha` with `git ls-remote origin refs/heads/main`;
+   if they differ, skip those two and push the rest (R7, D7).
 
 Actions keep their existing tag pins in this workflow (non-goal).
