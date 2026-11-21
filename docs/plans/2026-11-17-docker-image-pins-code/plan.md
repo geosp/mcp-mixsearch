@@ -235,7 +235,7 @@ same step.
 
 ## Impact
 
-- Packages / directories: `Dockerfile`, `.dockerignore` (new), `docker/`, `.github/workflows/docker-publish.yml`, `.github/workflows/ci-gate.yml` (comment only), `.github/scripts/docker_smoke.sh` (new), `server.py`, `tests/`, `pyproject.toml` (comment only), `CHANGELOG.md`, `docs/decision-log.md`, `README.md`
+- Packages / directories: `Dockerfile`, `.dockerignore` (new), `docker/`, `.github/workflows/docker-publish.yml`, `.github/workflows/ci-gate.yml` (comment only), `.github/scripts/docker_smoke.sh` and `.github/scripts/select_push_tags.py` (new), `server.py`, `tests/`, `pyproject.toml` (comment only), `CHANGELOG.md`, `docs/decision-log.md`, `README.md`
 - Data: none
 - Jobs / APIs: the published image's entrypoint and default command; `/health` `version`; MCP server info version
 
@@ -254,3 +254,4 @@ same step.
 ## Decision log
 
 2026-11-21 · notes.md#d5 step 1 changed: the concurrency group is per commit on `main` and tags, not per ref, because a shared group keeps only one pending run and cancels the rest, which would skip their `sha-…` tags (R7). Found by impl review I1.
+2026-11-21 · notes.md#d5 step 4 changed: tag selection moved from inline workflow shell into `.github/scripts/select_push_tags.py`, tested in `tests/test_docker_publish.py` with checks of the workflow's step order and the compose files; the tip is read only when a moving tag is present; the unused `master` trigger is removed. Found by impl review J1, J2, J3, J6.

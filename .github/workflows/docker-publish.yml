@@ -2,10 +2,10 @@ name: Build and Push Docker Image
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
     tags: [ 'v*.*.*' ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
 
 # A new push to a PR cancels its older run. Every commit on main or a tag gets its own group, so
 # no run is cancelled and every sha tag is pushed (a shared group keeps only one pending run).
@@ -83,7 +83,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # main and latest move only to the tip of main, so re-running an old run can't move them
-      # back; sha and version tags are always pushed
+      # back; sha and version tags are always pushed (.github/scripts/select_push_tags.py)
       - name: Push the tested image
         if: github.event_name != 'pull_request'
         env:
@@ -91,21 +91,7 @@ jobs:
           REPO_URL: https://github.com/${{ github.repository }}
           SHA: ${{ github.sha }}
         run: |
-          set -o pipefail
-          tip="$(git ls-remote --exit-code "$REPO_URL" refs/heads/main | cut -f1)"
-          if [ -z "$tip" ]; then
-            echo "could not read the tip of main" >&2
-            exit 1
-          fi
-          while IFS= read -r tag; do
-            [ -n "$tag" ] || continue
-            case "$tag" in
-              *:main|*:latest)
-                if [ "$tip" != "$SHA" ]; then
-                  echo "skip $tag: $SHA is no longer the tip of main ($tip)"
-                  continue
-                fi
-                ;;
-            esac
+          tags="$(python3 .github/scripts/select_push_tags.py)"
+          for tag in $tags; do
             docker push "$tag"
-          done <<< "$TAGS"
+          done

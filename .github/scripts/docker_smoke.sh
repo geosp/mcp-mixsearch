@@ -69,7 +69,7 @@ with sync_playwright() as p:
 echo "ok: headless Firefox launches"
 
 # 3. --help
-docker run --rm "$image" --help | grep -q "usage: mcp-mixsearch" \
+docker run --rm "$image" --help | grep "usage: mcp-mixsearch" >/dev/null \
   || fail "--help did not print the server's usage or exit 0"
 echo "ok: --help prints the usage"
 

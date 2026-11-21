@@ -84,16 +84,16 @@ Round 1 fixes: none came back. Closed round 1 findings (I6, I9, I10, I13) stay c
 
 | ID | Sev | Lens | Req | Finding | Resolution |
 | --- | --- | --- | --- | --- | --- |
-| J1 | Major | contract | R7, D7 | The moving-tag logic is inline in the workflow and runs only on real pushes; no test can observe it | open |
-| J2 | Major | contract | R6, D5 | No automated check that the push follows a passing smoke test and is skipped on PRs | open |
-| J3 | Nit | contract | R7 | A failing `ls-remote` blocks version and sha tags even when no moving tag is pushed | open |
-| J4 | Nit | contract | D7 | Unauthenticated `ls-remote` works only while the repo is public | open |
-| J5 | Nit | contract | R7 | Main can move between the tip read and `docker push :main` | open |
-| J6 | Nit | contract | R7 | A `master` push would push `:master` without the tip check | open |
-| J7 | Nit | contract | R4 | `--help \| grep -q` can SIGPIPE under pipefail | open |
-| J8 | Nit | contract | R4 | `--port 3001` checked inside the container, not through `-p` | open |
-| J9 | Nit | contract | R3 | Smoke compares with pyproject.toml, not installed metadata | open |
-| J10 | Nit | contract | R1 | PR `github.sha` vs metadata-action's revision not yet observed | open |
-| J11 | Nit | contract | R5 | No automated compose check (as I6) | open |
-| J12 | Nit | contract | R1 | Lazy downloads on the search path aren't run offline | open |
-| J13 | Nit | contract | phase | Tasks 4.3 and 6.2 open (as I15) | open |
+| J1 | Major | contract | R7, D7 | The moving-tag logic is inline in the workflow and runs only on real pushes; no test can observe it | fixed: `.github/scripts/select_push_tags.py`, tests in tests/test_docker_publish.py; they fail when the tip check is removed |
+| J2 | Major | contract | R6, D5 | No automated check that the push follows a passing smoke test and is skipped on PRs | fixed: tests/test_docker_publish.py checks build `push: false`, step order, no `continue-on-error`/`always()`, PR `if:`; they fail with `push: true` |
+| J3 | Nit | contract | R7 | A failing `ls-remote` blocks version and sha tags even when no moving tag is pushed | fixed: the tip is read only when a moving tag is present (test_version_run_needs_no_tip_and_pushes_every_tag) |
+| J4 | Nit | contract | D7 | Unauthenticated `ls-remote` works only while the repo is public | accepted: the repository is public; if it goes private the step fails loudly, not silently |
+| J5 | Nit | contract | R7 | Main can move between the tip read and `docker push :main` | accepted: the window is the seconds between the tip read and the push, while a newer run needs a ~4 min build first |
+| J6 | Nit | contract | R7 | A `master` push would push `:master` without the tip check | fixed: `master` triggers removed from docker-publish.yml |
+| J7 | Nit | contract | R4 | `--help \| grep -q` can SIGPIPE under pipefail | fixed: `grep >/dev/null` instead of `grep -q` in docker_smoke.sh |
+| J8 | Nit | contract | R4 | `--port 3001` checked inside the container, not through `-p` | accepted: port 3000 is checked through a published port, and `--port 3001` binds the same way; the published path is what `-p` adds |
+| J9 | Nit | contract | R3 | Smoke compares with pyproject.toml, not installed metadata | accepted: equal in a locked build; tests/test_server.py checks against installed metadata |
+| J10 | Nit | contract | R1 | PR `github.sha` vs metadata-action's revision not yet observed | open: observed by the PR's docker-publish run (task 4.3) |
+| J11 | Nit | contract | R5 | No automated compose check (as I6) | fixed: test_compose_files_run_the_image_as_built |
+| J12 | Nit | contract | R1 | Lazy downloads on the search path aren't run offline | accepted: searching needs the network by design; R1 is about code, which startup alone loads |
+| J13 | Nit | contract | phase | Tasks 4.3 and 6.2 open (as I15) | open: task 4.3 waits for the PR run, task 6.2 for the manual check |

@@ -51,7 +51,9 @@ which includes the tool instruction `.md` files under `features/web_search/`.
    - R3: compares `/health`'s `version` with `pyproject.toml`;
    - on any failure prints `docker logs`, removes the container and exits non-zero.
 4. On non-PR events only: `docker push` each tag from step 2, so the pushed image is the tested one.
-   Before pushing `main` or `latest`, compare `github.sha` with `git ls-remote origin refs/heads/main`;
-   if they differ, skip those two and push the rest (R7, D7).
+   `.github/scripts/select_push_tags.py` picks the tags: when `main` or `latest` is among them, it
+   compares `github.sha` with `git ls-remote --exit-code <repo URL> refs/heads/main` and drops
+   those two if they differ; an unreadable tip fails the step (R7, D7). `tests/test_docker_publish.py`
+   tests the selection and checks the workflow's step order and the compose files (R5, R6).
 
 Actions keep their existing tag pins in this workflow (non-goal).
