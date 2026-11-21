@@ -52,3 +52,26 @@ Round 1 fixes: none came back. The two-rules Nits on R1, R5, R6 stay closed (F18
 | G15 | Nit | fresh reader | Wording: two Summary sentences, Risks bullet 2 length, D3 stray space, build needs GitHub, manual-check timing, revert's "same command", uv pin file names, base image is current, minor vs major | fixed: Summary, Risks, D3, Terms, Assumptions, Rollout steps 3-4 and revert paragraph |
 
 ## 2026-11-21 · approved · plan (and phase 01)
+
+## 2026-11-21 · impl-review · phase 01 · round 1 · changes-requested
+Diff: 3057bac1dabfe64b7511a7cd52bc6bb5eb45a51b..9ec30e586a347924edd18863e2d8e256a782aec0
+Reviewers: contract ✅ (the `small` profile's only impl lens)
+Raw report: docs/reviews/2026-11-17-docker-image-pins-code/raw/impl-review-01-contract.md
+
+| ID | Sev | Lens | Req | Finding | Resolution |
+| --- | --- | --- | --- | --- | --- |
+| I1 | Major | contract | R7, D5 | A concurrency group keeps one pending run, so a third push to `main` cancels the second and its `sha-…` tag is never pushed | open |
+| I2 | Nit | contract | R4 | Nothing runs `--help` and checks exit 0 | open |
+| I3 | Nit | contract | R4 | The smoke test never fetches `/health` through a published port | open |
+| I4 | Nit | contract | R1 | No automated check of the revision label | open |
+| I5 | Nit | contract | R3 | Test reads `service_version`, not the version the FastMCP app reports | open |
+| I6 | Nit | contract | R5 | No automated `docker compose config` check | open |
+| I7 | Nit | contract | R6 | Workflow behaviour not yet observed (task 4.3 open) | open |
+| I8 | Nit | contract | D7 | A failing `git ls-remote` leaves `tip` empty and silently skips `main`/`latest` | open |
+| I9 | Nit | contract | D7 | Code uses the repo URL, D7 says `origin` | open |
+| I10 | Nit | contract | R7 | Semver `1`, `1.2` tags also move on re-runs | open |
+| I11 | Nit | contract | R6 | A non-JSON `/health` body exits through `set -e`, bypassing `fail` and its logs | open |
+| I12 | Nit | contract | docs | `docker/README.md` uses `:v1.1.0` as a pinned example, which won't start with the new compose | open |
+| I13 | Nit | contract | D3 | CHANGELOG migration example differs in form from D3 | open |
+| I14 | Nit | contract | plan | Phases table shows 0/14 | open |
+| I15 | Nit | contract | phase | Tasks 4.3 and 6.2 unticked | open |
