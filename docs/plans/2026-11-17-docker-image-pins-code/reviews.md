@@ -75,3 +75,25 @@ Raw report: docs/reviews/2026-11-17-docker-image-pins-code/raw/impl-review-01-co
 | I13 | Nit | contract | D3 | CHANGELOG migration example differs in form from D3 | accepted: same meaning; the compose form is clearer in a changelog |
 | I14 | Nit | contract | plan | Phases table shows 0/14 | fixed: Phases table |
 | I15 | Nit | contract | phase | Tasks 4.3 and 6.2 unticked | open: task 4.3 waits for the PR run, task 6.2 for the manual check |
+
+## 2026-11-21 · impl-review · phase 01 · round 2 · changes-requested
+Diff: 3057bac1dabfe64b7511a7cd52bc6bb5eb45a51b..a3214a7294d607adf5c62e73ae32f9739d1fc078
+Reviewers: contract ✅
+Raw report: docs/reviews/2026-11-17-docker-image-pins-code/raw/impl-review-02-contract.md
+Round 1 fixes: none came back. Closed round 1 findings (I6, I9, I10, I13) stay closed.
+
+| ID | Sev | Lens | Req | Finding | Resolution |
+| --- | --- | --- | --- | --- | --- |
+| J1 | Major | contract | R7, D7 | The moving-tag logic is inline in the workflow and runs only on real pushes; no test can observe it | open |
+| J2 | Major | contract | R6, D5 | No automated check that the push follows a passing smoke test and is skipped on PRs | open |
+| J3 | Nit | contract | R7 | A failing `ls-remote` blocks version and sha tags even when no moving tag is pushed | open |
+| J4 | Nit | contract | D7 | Unauthenticated `ls-remote` works only while the repo is public | open |
+| J5 | Nit | contract | R7 | Main can move between the tip read and `docker push :main` | open |
+| J6 | Nit | contract | R7 | A `master` push would push `:master` without the tip check | open |
+| J7 | Nit | contract | R4 | `--help \| grep -q` can SIGPIPE under pipefail | open |
+| J8 | Nit | contract | R4 | `--port 3001` checked inside the container, not through `-p` | open |
+| J9 | Nit | contract | R3 | Smoke compares with pyproject.toml, not installed metadata | open |
+| J10 | Nit | contract | R1 | PR `github.sha` vs metadata-action's revision not yet observed | open |
+| J11 | Nit | contract | R5 | No automated compose check (as I6) | open |
+| J12 | Nit | contract | R1 | Lazy downloads on the search path aren't run offline | open |
+| J13 | Nit | contract | phase | Tasks 4.3 and 6.2 open (as I15) | open |
