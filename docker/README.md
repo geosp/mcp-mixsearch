@@ -93,7 +93,7 @@ For quick edit-and-run loops, run the server on the host instead: `uv run mcp-mi
 - **Endpoints**: `/mcp` for the MCP protocol and `/health` for health checks. There is no REST API
 - **Auth**: The server has no auth provider, so with `MCP_AUTH_ENABLED` unset or `true` it refuses to start; keep `MCP_AUTH_ENABLED=false` and put an authenticating gateway in front if needed
 - **Passing options**: the image's entrypoint is `mcp-mixsearch`, so a compose `command` holds only server options, for example `command: ["--port", "3001"]`. The server stays in HTTP mode. Older compose files with `command: ["mcp-mixsearch@git+…", …]` no longer work: remove that line
-- **Versioned deployments**: Use a release tag (e.g., `:v1.1.0`) instead of `:main` or `:latest`, which change on every merge. See [Semantic Versioning & Releases](#semantic-versioning--releases)
+- **Versioned deployments**: Use a release tag (e.g., `:v1.2.0`) instead of `:main` or `:latest`, which change on every merge. See [Semantic Versioning & Releases](#semantic-versioning--releases)
 
 ## Environment Variables
 
@@ -237,6 +237,6 @@ ref in `prod/docker-compose.yml`:
 ### Branch vs Release Strategy
 
 - **Branch-based** (`:main`): Latest development version, updated on every push
-- **Release-based** (`:v1.1.0`): Stable, immutable versions for production
+- **Release-based** (`:v1.2.0`): Stable, immutable versions for production
 
 Use branch-based for development/testing, release-based for production stability.

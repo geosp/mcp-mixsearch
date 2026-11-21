@@ -48,8 +48,8 @@ scraping. Issue #14 has the full report.
 - Both compose files run the image as built: no `command`, no source mount.
 - `/health` and the MCP server info report the installed package version, not a hard-coded `1.0.0`.
 - `docker-publish.yml` runs the smoke test on the built image and pushes that same image; a
-  `concurrency` group queues pushes to `main` in order, and `main`/`latest` are pushed only from
-  the tip of `main` (R7).
+  per-commit `concurrency` group cancels only stale PR runs, and `main`/`latest` are pushed only
+  from the tip of `main` (R7).
 - `server.py` gets a test for the reported version (R3).
 - A `.dockerignore` keeps local files (`.venv`, `.git`, `docs`, `tests`) out of the build.
 - `docker/README.md`, `CHANGELOG.md`, `docs/decision-log.md`, the root `README.md` dependency
@@ -249,6 +249,8 @@ same step.
 
 | Phase | Title | Status | Tasks |
 | --- | --- | --- | --- |
-| 01 | Image with the app built in | in-progress | 0/14 |
+| 01 | Image with the app built in | in-progress | 12/14 |
 
 ## Decision log
+
+2026-11-21 · notes.md#d5 step 1 changed: the concurrency group is per commit on `main` and tags, not per ref, because a shared group keeps only one pending run and cancels the rest, which would skip their `sha-…` tags (R7). Found by impl review I1.

@@ -35,8 +35,10 @@ which includes the tool instruction `.md` files under `features/web_search/`.
 
 `docker-publish.yml` after this plan:
 
-1. `concurrency: { group: docker-publish-${{ github.ref }}, cancel-in-progress: ${{ github.event_name == 'pull_request' }} }`:
-   pushes to `main` queue in order; a new PR push cancels its older run, as in `ci-gate.yml`.
+1. `concurrency`: the same pattern as `ci-gate.yml`, one group per PR and one per commit
+   otherwise, cancelling only on PRs. A group shared by every `main` push would keep only one
+   pending run and cancel the others, so their `sha-…` tags would never be pushed. Ordering of
+   the moving tags comes from the tip check in step 4.
 2. Metadata tags: replace the bare `latest` with `type=raw,value=latest,enable={{is_default_branch}}`
    (R7). Build once with `docker/build-push-action`, `load: true`, `push: false`, and the tags and
    labels from `docker/metadata-action` (which include `org.opencontainers.image.revision`).

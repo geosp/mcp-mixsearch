@@ -60,18 +60,18 @@ Raw report: docs/reviews/2026-11-17-docker-image-pins-code/raw/impl-review-01-co
 
 | ID | Sev | Lens | Req | Finding | Resolution |
 | --- | --- | --- | --- | --- | --- |
-| I1 | Major | contract | R7, D5 | A concurrency group keeps one pending run, so a third push to `main` cancels the second and its `sha-…` tag is never pushed | open |
-| I2 | Nit | contract | R4 | Nothing runs `--help` and checks exit 0 | open |
-| I3 | Nit | contract | R4 | The smoke test never fetches `/health` through a published port | open |
-| I4 | Nit | contract | R1 | No automated check of the revision label | open |
-| I5 | Nit | contract | R3 | Test reads `service_version`, not the version the FastMCP app reports | open |
-| I6 | Nit | contract | R5 | No automated `docker compose config` check | open |
-| I7 | Nit | contract | R6 | Workflow behaviour not yet observed (task 4.3 open) | open |
-| I8 | Nit | contract | D7 | A failing `git ls-remote` leaves `tip` empty and silently skips `main`/`latest` | open |
-| I9 | Nit | contract | D7 | Code uses the repo URL, D7 says `origin` | open |
-| I10 | Nit | contract | R7 | Semver `1`, `1.2` tags also move on re-runs | open |
-| I11 | Nit | contract | R6 | A non-JSON `/health` body exits through `set -e`, bypassing `fail` and its logs | open |
-| I12 | Nit | contract | docs | `docker/README.md` uses `:v1.1.0` as a pinned example, which won't start with the new compose | open |
-| I13 | Nit | contract | D3 | CHANGELOG migration example differs in form from D3 | open |
-| I14 | Nit | contract | plan | Phases table shows 0/14 | open |
-| I15 | Nit | contract | phase | Tasks 4.3 and 6.2 unticked | open |
+| I1 | Major | contract | R7, D5 | A concurrency group keeps one pending run, so a third push to `main` cancels the second and its `sha-…` tag is never pushed | fixed: per-commit concurrency group in docker-publish.yml (notes.md#d5 step 1, Decision log); observed by the PR and main runs |
+| I2 | Nit | contract | R4 | Nothing runs `--help` and checks exit 0 | fixed: `--help` check in docker_smoke.sh |
+| I3 | Nit | contract | R4 | The smoke test never fetches `/health` through a published port | fixed: published-port check in docker_smoke.sh; fails on an image bound to 127.0.0.1 |
+| I4 | Nit | contract | R1 | No automated check of the revision label | fixed: EXPECTED_REVISION check in docker_smoke.sh, set to github.sha by the workflow; fails on a wrong SHA |
+| I5 | Nit | contract | R3 | Test reads `service_version`, not the version the FastMCP app reports | fixed: tests/test_server.py reads serverInfo through an MCP client; fails with the hard-coded version |
+| I6 | Nit | contract | R5 | No automated `docker compose config` check | accepted: compose files have no build logic; rendered by `docker compose config` in tasks 3.1-3.2 |
+| I7 | Nit | contract | R6 | Workflow behaviour not yet observed (task 4.3 open) | open: observed when the PR's docker-publish run passes (task 4.3) |
+| I8 | Nit | contract | D7 | A failing `git ls-remote` leaves `tip` empty and silently skips `main`/`latest` | fixed: pipefail, `--exit-code` and an empty-tip failure in the push step |
+| I9 | Nit | contract | D7 | Code uses the repo URL, D7 says `origin` | accepted: the repository URL and `origin` name the same public repository |
+| I10 | Nit | contract | R7 | Semver `1`, `1.2` tags also move on re-runs | accepted: version tags are pushed on every run by design (R7); only `main` and `latest` are moving tags |
+| I11 | Nit | contract | R6 | A non-JSON `/health` body exits through `set -e`, bypassing `fail` and its logs | fixed: version parse routes through `fail` in docker_smoke.sh |
+| I12 | Nit | contract | docs | `docker/README.md` uses `:v1.1.0` as a pinned example, which won't start with the new compose | fixed: docker/README.md examples use `:v1.2.0` |
+| I13 | Nit | contract | D3 | CHANGELOG migration example differs in form from D3 | accepted: same meaning; the compose form is clearer in a changelog |
+| I14 | Nit | contract | plan | Phases table shows 0/14 | fixed: Phases table |
+| I15 | Nit | contract | phase | Tasks 4.3 and 6.2 unticked | open: task 4.3 waits for the PR run, task 6.2 for the manual check |

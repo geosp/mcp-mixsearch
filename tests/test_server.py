@@ -1,6 +1,6 @@
 from importlib.metadata import version
 
-from fastmcp import FastMCP
+from fastmcp import Client, FastMCP
 from starlette.testclient import TestClient
 
 import server
@@ -16,6 +16,9 @@ def test_health_reports_installed_version():
     assert response.json()["version"] == version("mcp-mixsearch")
 
 
-def test_server_info_reports_installed_version():
-    assert server.SERVICE_VERSION == version("mcp-mixsearch")
-    assert server.MixSearchServer.service_version.fget(None) == version("mcp-mixsearch")
+async def test_server_info_reports_installed_version():
+    config = AppConfig()
+    mcp = server.MixSearchServer(config.server, server.MixSearchService(config)).create_mcp_app()
+    async with Client(mcp, mode="legacy") as client:
+        info = client.initialize_result.server_info
+    assert info.version == version("mcp-mixsearch")

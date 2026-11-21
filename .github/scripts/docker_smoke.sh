@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 # Smoke test for a built mcp-mixsearch image. Run by .github/workflows/docker-publish.yml before
 # any push, and locally: .github/scripts/docker_smoke.sh <image>
+# Set EXPECTED_REVISION to a commit SHA to also check the image's revision label.
 #
 # Checks, failing on the first problem:
-#   1. Playwright in the image is the version uv.lock locks, and it launches headless Firefox.
-#   2. The server starts with no network and answers /health (on 3000, and on 3001 via --port).
-#   3. /health reports the version in pyproject.toml.
+#   1. The revision label is EXPECTED_REVISION (when set).
+#   2. Playwright in the image is the version uv.lock locks, and it launches headless Firefox.
+#   3. `--help` prints the server's usage and exits 0.
+#   4. The server starts with no network and answers /health (on 3000, and on 3001 via --port),
+#      and answers through a published port from the host.
+#   5. /health reports the version in pyproject.toml.
 set -euo pipefail
 
 image="${1:?usage: docker_smoke.sh <image>}"
@@ -38,7 +42,15 @@ import sys, tomllib
 print(tomllib.load(open(sys.argv[1], "rb"))["project"]["version"])
 ' "$root/pyproject.toml")"
 
-# 1. Playwright version and a Firefox launch (the entrypoint is the server, so override it)
+# 1. Revision label
+if [ -n "${EXPECTED_REVISION:-}" ]; then
+  revision="$(docker inspect -f '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$image")"
+  [ "$revision" = "$EXPECTED_REVISION" ] \
+    || fail "revision label is '$revision', expected $EXPECTED_REVISION"
+  echo "ok: revision label is $revision"
+fi
+
+# 2. Playwright version and a Firefox launch (the entrypoint is the server, so override it)
 image_playwright="$(docker run --rm --entrypoint python "$image" -c \
   'import importlib.metadata as m; print(m.version("playwright"))')" \
   || fail "could not read the playwright version in the image"
@@ -56,22 +68,50 @@ with sync_playwright() as p:
 ' || fail "headless Firefox did not launch"
 echo "ok: headless Firefox launches"
 
-# 2 and 3. Start with no network; fetch /health from inside the container
+# 3. --help
+docker run --rm "$image" --help | grep -q "usage: mcp-mixsearch" \
+  || fail "--help did not print the server's usage or exit 0"
+echo "ok: --help prints the usage"
+
+# 4 and 5. /health, fetched from inside the container (mode "inside", with no network) or from
+# the host through a published port (mode "host")
+fetch_health() {
+  local mode="$1" name="$2" port="$3"
+  local url
+  if [ "$mode" = "inside" ]; then
+    url="http://127.0.0.1:$port/health"
+    docker exec "$name" python -c "
+import urllib.request
+print(urllib.request.urlopen('$url', timeout=2).read().decode())
+" 2>/dev/null
+  else
+    local host_port
+    host_port="$(docker port "$name" "$port/tcp" | head -n1 | sed 's/.*://')"
+    [ -n "$host_port" ] || return 1
+    python3 -c "
+import urllib.request
+print(urllib.request.urlopen('http://127.0.0.1:$host_port/health', timeout=2).read().decode())
+" 2>/dev/null
+  fi
+}
+
 check_health() {
-  local name="$1" port="$2"
-  shift 2
-  docker run -d --name "$name" --network none -e MCP_AUTH_ENABLED=false "$image" "$@" >/dev/null \
-    || fail "could not start $name"
+  local mode="$1" name="$2" port="$3"
+  shift 3
+  local run_args=(-d --name "$name" -e MCP_AUTH_ENABLED=false)
+  if [ "$mode" = "inside" ]; then
+    run_args+=(--network none)
+  else
+    run_args+=(-p "127.0.0.1::$port")
+  fi
+  docker run "${run_args[@]}" "$image" "$@" >/dev/null || fail "could not start $name"
   containers+=("$name")
   local body="" deadline=$((SECONDS + timeout_s))
   while [ "$SECONDS" -lt "$deadline" ]; do
     if [ "$(docker inspect -f '{{.State.Running}}' "$name")" != "true" ]; then
       fail "$name exited before answering /health"
     fi
-    if body="$(docker exec "$name" python -c "
-import urllib.request
-print(urllib.request.urlopen('http://127.0.0.1:$port/health', timeout=2).read().decode())
-" 2>/dev/null)"; then
+    if body="$(fetch_health "$mode" "$name" "$port")"; then
       break
     fi
     body=""
@@ -79,14 +119,16 @@ print(urllib.request.urlopen('http://127.0.0.1:$port/health', timeout=2).read().
   done
   [ -n "$body" ] || fail "$name did not answer /health on port $port within ${timeout_s}s"
   local reported
-  reported="$(python3 -c 'import json, sys; print(json.loads(sys.argv[1])["version"])' "$body")"
+  reported="$(python3 -c 'import json, sys; print(json.loads(sys.argv[1])["version"])' "$body" \
+    2>/dev/null)" || fail "/health returned a body without a version: $body"
   [ "$reported" = "$project_version" ] \
     || fail "/health reports version $reported, pyproject.toml has $project_version"
-  echo "ok: $name answers /health on port $port with no network, version $reported"
+  echo "ok: $name answers /health on port $port ($mode), version $reported"
 }
 
 suffix="$$"
-check_health "mcp-mixsearch-smoke-default-$suffix" 3000
-check_health "mcp-mixsearch-smoke-port-$suffix" 3001 --port 3001
+check_health inside "mcp-mixsearch-smoke-default-$suffix" 3000
+check_health inside "mcp-mixsearch-smoke-port-$suffix" 3001 --port 3001
+check_health host "mcp-mixsearch-smoke-published-$suffix" 3000
 
 echo "smoke test passed: $image"

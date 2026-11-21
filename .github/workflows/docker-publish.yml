@@ -7,9 +7,11 @@ on:
   pull_request:
     branches: [ main, master ]
 
-# Pushes to main queue in order; a new push to a PR cancels its older run.
+# A new push to a PR cancels its older run. Every commit on main or a tag gets its own group, so
+# no run is cancelled and every sha tag is pushed (a shared group keeps only one pending run).
+# The tip check in the push step keeps main and latest from moving back.
 concurrency:
-  group: docker-publish-${{ github.ref }}
+  group: docker-publish-${{ github.ref }}-${{ github.event_name == 'pull_request' && 'pr' || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
@@ -69,6 +71,7 @@ jobs:
       - name: Smoke test
         env:
           IMAGE: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+          EXPECTED_REVISION: ${{ github.sha }}
         run: .github/scripts/docker_smoke.sh "$IMAGE"
 
       - name: Log in to GitHub Container Registry
@@ -88,7 +91,12 @@ jobs:
           REPO_URL: https://github.com/${{ github.repository }}
           SHA: ${{ github.sha }}
         run: |
-          tip="$(git ls-remote "$REPO_URL" refs/heads/main | cut -f1)"
+          set -o pipefail
+          tip="$(git ls-remote --exit-code "$REPO_URL" refs/heads/main | cut -f1)"
+          if [ -z "$tip" ]; then
+            echo "could not read the tip of main" >&2
+            exit 1
+          fi
           while IFS= read -r tag; do
             [ -n "$tag" ] || continue
             case "$tag" in
