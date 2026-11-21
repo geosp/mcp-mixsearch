@@ -1,6 +1,6 @@
 ---
 title: Build the app into the Docker image
-status: approved
+status: in-progress
 created: 2026-11-17
 updated: 2026-11-21
 design_review: { status: passed, rounds: 2, last: 2026-11-21 }
@@ -249,6 +249,6 @@ same step.
 
 | Phase | Title | Status | Tasks |
 | --- | --- | --- | --- |
-| 01 | Image with the app built in | approved | 0/14 |
+| 01 | Image with the app built in | in-progress | 0/14 |
 
 ## Decision log
