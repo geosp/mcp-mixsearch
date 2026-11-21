@@ -202,7 +202,7 @@ uv build
 - ddgs: Metasearch library
 - httpx: HTTP client for search APIs and content extraction
 - trafilatura: Main-content extraction
-- playwright: Browser automation for dynamic content (pinned to match the Docker image's Firefox)
+- playwright: Browser automation for dynamic content (the Docker image installs Firefox with the version locked in `uv.lock`)
 - beautifulsoup4: HTML parsing
 - fake-useragent: Random user agents
 
