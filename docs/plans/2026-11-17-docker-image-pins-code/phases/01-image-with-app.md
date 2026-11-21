@@ -48,5 +48,5 @@ and the publish workflow proves it starts before pushing it.
 
 ### 6. Verification
 
-- [ ] 6.1 Run the AGENTS.md checks. Verify: all pass.
+- [x] 6.1 Run the AGENTS.md checks. Verify: all pass.
 - [ ] 6.2 Manual check in `docs/demos/2026-11-17-docker-image-pins-code-p1/`: build the image, before merge, start it with `--network none` and fetch `/health` from inside (R1), then start it normally and run a search through `/mcp` (R4); after merge, read the pushed `:main` image's revision label (R1). Verify: the record follows docs/demos/README.md.
