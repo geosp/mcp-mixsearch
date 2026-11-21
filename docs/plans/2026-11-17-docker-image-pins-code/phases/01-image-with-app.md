@@ -42,9 +42,9 @@ and the publish workflow proves it starts before pushing it.
 
 ### 5. Docs
 
-- [ ] 5.1 `docker/README.md`: the image holds the app; the versioned compose recipe changes only the image tag; add the v1.1.0 rollback snippet; describe the dev compose without live reload (R5, D4). Remove or fix the stale text: the uvx notes in Production Mode and Troubleshooting, "Git (for cloning dependencies)", "Mount the project directory" and "Use uvx" under Configuration, "The container uses uv…", "the compose files pass `--mode http`", the `UV_CACHE_DIR` variable, and the LXC "Production versioned mode" file name. Update the tag table: `latest` only on pushes to `main` (R7). Verify: `grep -n -i 'uvx\|UV_CACHE_DIR' docker/README.md` finds nothing; the ci-gate link check passes.
-- [ ] 5.2 `CHANGELOG.md` `Unreleased`: Changed (image holds the app; entrypoint change with migration step), Fixed (`/health` version) (D3, D6). Verify: read the entry.
-- [ ] 5.3 `docs/decision-log.md`: one line for building the app into the image (D1) and one for the new entrypoint and `MCP_TRANSPORT=http` (D3), and one for moving tags (D7). Verify: read the lines.
+- [x] 5.1 `docker/README.md`: the image holds the app; the versioned compose recipe changes only the image tag; add the v1.1.0 rollback snippet; describe the dev compose without live reload (R5, D4). Remove or fix the stale text: the uvx notes in Production Mode and Troubleshooting, "Git (for cloning dependencies)", "Mount the project directory" and "Use uvx" under Configuration, "The container uses uv…", "the compose files pass `--mode http`", the `UV_CACHE_DIR` variable, and the LXC "Production versioned mode" file name. Update the tag table: `latest` only on pushes to `main` (R7). Verify: `grep -n -i 'uvx\|UV_CACHE_DIR' docker/README.md` finds nothing; the ci-gate link check passes.
+- [x] 5.2 `CHANGELOG.md` `Unreleased`: Changed (image holds the app; entrypoint change with migration step), Fixed (`/health` version) (D3, D6). Verify: read the entry.
+- [x] 5.3 `docs/decision-log.md`: one line for building the app into the image (D1) and one for the new entrypoint and `MCP_TRANSPORT=http` (D3), and one for moving tags (D7). Verify: read the lines.
 
 ### 6. Verification
 

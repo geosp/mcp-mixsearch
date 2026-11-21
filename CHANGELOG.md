@@ -7,6 +7,25 @@ that changes behavior, configuration or tool output.
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking for Docker deployments:** the Docker image now holds the app, installed at build time
+  from `uv.lock`, so an image tag pins the code it runs and startup downloads nothing. The
+  image's entrypoint is `mcp-mixsearch` (it was `uvx`), and it serves HTTP by default
+  (`MCP_TRANSPORT=http`). To migrate, remove `command:` from your compose file, or keep only the
+  server's options, for example `command: ["--port", "3001"]`. (#14)
+- The image's Firefox is installed by the Playwright version locked in `uv.lock`; the Dockerfile
+  no longer pins Playwright separately. (#14)
+- `latest` is pushed only from `main`, and `main` and `latest` only from the tip of `main`.
+  Release tags no longer move `latest`. (#14)
+- The dev compose file (`docker/mcp/`) builds and runs the image without mounting the source;
+  rebuild it to pick up code changes. (#14)
+
+### Fixed
+
+- `/health` and the MCP server info report the installed package version. They reported `1.0.0`
+  on v1.1.0. (#14)
+
 ## [1.1.0] - 2026-11-17
 
 ### Added

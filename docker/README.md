@@ -2,6 +2,9 @@
 
 This directory contains Docker Compose configurations to run the MCP MixSearch server over streamable HTTP.
 
+The image holds the app: it is installed at build time from `uv.lock`, with Firefox from the locked
+Playwright version, so an image tag pins the code it runs and startup downloads nothing.
+
 ### Available Setups
 
 ### Development Setups (build locally)
@@ -13,7 +16,6 @@ This directory contains Docker Compose configurations to run the MCP MixSearch s
 ## Prerequisites
 
 - Docker and Docker Compose installed
-- Git (for cloning dependencies)
 
 ## Quick Start
 
@@ -26,9 +28,7 @@ docker-compose up --build -d
 
 ### Production Mode (Uses published images)
 
-**Note**: Production setups use the published Docker image from GHCR and run the package directly from the GitHub repository using `uvx mcp-mixsearch@git+https://github.com/geosp/mcp-mixsearch.git`.
-
-For production deployment using published images:
+Production setups run the published image from GHCR as it is: the app is already inside.
 
 ```bash
 cd docker/prod
@@ -56,15 +56,13 @@ cd docker/prod && docker-compose down
 ## Configuration
 
 ### Development Setups (Local building)
-These setups build the Docker image locally and mount the source code for live development.
+These setups build the Docker image locally, the same way CI builds the published image.
 
 #### MCP Mode (mcp/docker-compose.yml)
 The service is configured to:
 - Build from the parent directory's Dockerfile
-- Mount the project directory as `/app` for live code changes
 - Expose port 3000 for MCP communication
-- Run in streamable HTTP mode (`--mode http`) without auth (`MCP_AUTH_ENABLED=false`)
-- Use uvx to run the local MCP MixSearch package
+- Run in streamable HTTP mode (the image sets `MCP_TRANSPORT=http`) without auth (`MCP_AUTH_ENABLED=false`)
 
 ### Production Setup (Published images)
 This setup uses pre-built images from GitHub Container Registry for faster deployment.
@@ -73,18 +71,18 @@ This setup uses pre-built images from GitHub Container Registry for faster deplo
 The service is configured to:
 - Use published image: `ghcr.io/geosp/mcp-mixsearch:main`
 - Expose port 3000 for MCP communication
-- Run in streamable HTTP mode (`--mode http`) without auth (`MCP_AUTH_ENABLED=false`)
+- Run in streamable HTTP mode (the image sets `MCP_TRANSPORT=http`) without auth (`MCP_AUTH_ENABLED=false`)
 - No source code mounting required
 
 ## Development
 
-For development setups, the volume mount allows you to make changes to the code without rebuilding the container. Simply restart the service after changes:
+The image holds a copy of the code, so rebuild it to pick up changes:
 
 ```bash
-cd docker/mcp && docker-compose restart mcp-mixsearch
+cd docker/mcp && docker-compose up --build -d
 ```
 
-**Note**: Production setups use published images and do not support live code reloading.
+For quick edit-and-run loops, run the server on the host instead: `uv run mcp-mixsearch --mode http --no-auth`.
 
 ## Troubleshooting
 
@@ -92,10 +90,9 @@ cd docker/mcp && docker-compose restart mcp-mixsearch
 - **Port 3000 already allocated**: another container or process uses the host port. Pick another one with `MCP_HOST_PORT`, e.g. `MCP_HOST_PORT=3002 docker compose up -d`, and point clients at `http://localhost:3002/mcp`
 - The compose files set `name: mcp-mixsearch`, so this project doesn't share the default `mcp`/`prod` project name with other compose projects (which would show their containers as "orphans")
 - Check the logs with `docker-compose logs mcp-mixsearch` for detailed error messages
-- The container uses uv for Python package management, which handles dependencies automatically
 - **Endpoints**: `/mcp` for the MCP protocol and `/health` for health checks. There is no REST API
 - **Auth**: The server has no auth provider, so with `MCP_AUTH_ENABLED` unset or `true` it refuses to start; keep `MCP_AUTH_ENABLED=false` and put an authenticating gateway in front if needed
-- **Production mode**: Uses `uvx` to run the package directly from the GitHub repository (`git+https://github.com/geosp/mcp-mixsearch.git`)
+- **Passing options**: the image's entrypoint is `mcp-mixsearch`, so a compose `command` holds only server options, for example `command: ["--port", "3001"]`. The server stays in HTTP mode. Older compose files with `command: ["mcp-mixsearch@git+…", …]` no longer work: remove that line
 - **Versioned deployments**: Use a release tag (e.g., `:v1.1.0`) instead of `:main` or `:latest`, which change on every merge. See [Semantic Versioning & Releases](#semantic-versioning--releases)
 
 ## Environment Variables
@@ -103,8 +100,7 @@ cd docker/mcp && docker-compose restart mcp-mixsearch
 You can add environment variables in the `docker-compose.yml` files under the `environment` section if needed for configuration.
 
 - `MCP_AUTH_ENABLED=false`: Serves HTTP without auth (required, since the server has no auth provider)
-- `MCP_TRANSPORT`, `MCP_HOST`, `MCP_PORT`: Transport and bind address (the compose files pass `--mode http`)
-- `UV_CACHE_DIR=/tmp/uv-cache`: Sets the cache directory for uv package manager
+- `MCP_TRANSPORT`, `MCP_HOST`, `MCP_PORT`: Transport and bind address. The image sets `MCP_TRANSPORT=http`; the server binds `0.0.0.0:3000` by default
 
 ## Advanced: LXC Environment Setup
 
@@ -136,10 +132,10 @@ sudo podman-compose -f prod/docker-compose.yml up -d
 sudo podman-compose -f prod/docker-compose.yml logs -f mcp-mixsearch
 sudo podman-compose -f prod/docker-compose.yml down
 
-# Production versioned mode
-sudo podman-compose -f prod/docker-compose.v1.1.0.yml up -d
-sudo podman-compose -f prod/docker-compose.v1.1.0.yml logs -f mcp-mixsearch
-sudo podman-compose -f prod/docker-compose.v1.1.0.yml down
+# Production versioned mode (see Creating Versioned Compose Files)
+sudo podman-compose -f prod/docker-compose.v1.2.0.yml up -d
+sudo podman-compose -f prod/docker-compose.v1.2.0.yml logs -f mcp-mixsearch
+sudo podman-compose -f prod/docker-compose.v1.2.0.yml down
 ```
 
 If you encounter container build failures in LXC, the privileged configuration above should resolve the `/proc` mount permission errors.
@@ -187,8 +183,8 @@ The project uses [semantic versioning](https://semver.org/) for stable releases.
    git push origin v1.1.0
    ```
 
-3. **GitHub Actions** (`.github/workflows/docker-publish.yml`) builds the image and pushes it with
-   the tags listed below.
+3. **GitHub Actions** (`.github/workflows/docker-publish.yml`) builds the image, runs the smoke
+   test (`.github/scripts/docker_smoke.sh`) and pushes that same image with the tags listed below.
 
 4. **Create the GitHub release** from the changelog section:
    ```bash
@@ -200,36 +196,43 @@ The project uses [semantic versioning](https://semver.org/) for stable releases.
 | Event | Tags pushed |
 | --- | --- |
 | Merge (push) to `main` | `main`, `latest`, `sha-<short sha>` |
-| Tag `v1.2.3` | `v1.2.3`, `1.2.3`, `1.2`, `1`, `latest`, `sha-<short sha>` |
-| Pull request | Built, not pushed |
+| Tag `v1.2.3` | `v1.2.3`, `1.2.3`, `1.2`, `1`, `sha-<short sha>` |
+| Pull request | Built and smoke-tested, not pushed |
 
-`latest` follows `main`; it doesn't mean "latest release". For a pinned deployment, use a full
-version tag such as `v1.2.3` or `1.2.3`.
-
-> **Note:** `prod/docker-compose.yml` starts the server with
-> `uvx mcp-mixsearch@git+https://github.com/geosp/mcp-mixsearch.git`, which installs the code from
-> the repository's default branch when the container starts. Pinning the image tag pins the
-> runtime, not that code. To pin the code too, append the tag to the URL, for example
-> `...mcp-mixsearch.git@v1.1.0`.
+`latest` follows `main`; it doesn't mean "latest release". `main` and `latest` are pushed only
+from a run whose commit is still the tip of `main`, so re-running an old run can't move them back.
+Every image carries its commit in the `org.opencontainers.image.revision` label
+(`docker inspect -f '{{ index .Config.Labels "org.opencontainers.image.revision" }}' <image>`).
+For a pinned deployment, use a full version tag such as `v1.2.3` or `1.2.3`: the tag pins the code.
 
 ### Creating Versioned Compose Files
 
 To create a versioned compose file for any release:
 
 ```bash
-# Replace VERSION with your desired version (e.g., v1.1.0)
-VERSION=v1.1.0
+# Replace VERSION with your desired version (e.g., v1.2.0)
+VERSION=v1.2.0
 
 # Copy the production compose file
 cp prod/docker-compose.yml prod/docker-compose.${VERSION}.yml
 
-# Pin the image tag and the code (see the note above)
-sed -i -e "s|ghcr.io/geosp/mcp-mixsearch:main|ghcr.io/geosp/mcp-mixsearch:${VERSION}|g" \
-       -e "s|mcp-mixsearch.git\"|mcp-mixsearch.git@${VERSION}\"|g" prod/docker-compose.${VERSION}.yml
+# Pin the image tag, which pins the code
+sed -i "s|ghcr.io/geosp/mcp-mixsearch:main|ghcr.io/geosp/mcp-mixsearch:${VERSION}|g" \
+    prod/docker-compose.${VERSION}.yml
 ```
 
-This creates `prod/docker-compose.v1.1.0.yml`, which runs the `v1.1.0` image and code instead of
-`main`.
+This creates `prod/docker-compose.v1.2.0.yml`, which runs the `v1.2.0` image instead of `main`.
+
+### Running v1.1.0 or earlier
+
+Images up to `v1.1.0` don't hold the app: they download the code from GitHub
+when the container starts. To run one (for example, to roll back), set both the image and the code
+ref in `prod/docker-compose.yml`:
+
+```yaml
+    image: ghcr.io/geosp/mcp-mixsearch:v1.1.0
+    command: ["mcp-mixsearch@git+https://github.com/geosp/mcp-mixsearch.git@v1.1.0", "--mode", "http"]
+```
 
 ### Branch vs Release Strategy
 
