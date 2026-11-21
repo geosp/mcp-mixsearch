@@ -21,7 +21,7 @@ and the publish workflow proves it starts before pushing it.
 
 ### 1. Version
 
-- [ ] 1.1 Read the version from package metadata in `server.py` for `/health` and the server info (R3, D6). Verify: a new test in `tests/` asserts that `/health` and `MixSearchServer.service_version` both return `importlib.metadata.version("mcp-mixsearch")`; `uv run pytest`.
+- [x] 1.1 Read the version from package metadata in `server.py` for `/health` and the server info (R3, D6). Verify: a new test in `tests/` asserts that `/health` and `MixSearchServer.service_version` both return `importlib.metadata.version("mcp-mixsearch")`; `uv run pytest`.
 
 ### 2. Image
 
