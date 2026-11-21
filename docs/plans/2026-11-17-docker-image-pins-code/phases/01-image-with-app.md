@@ -1,12 +1,12 @@
 ---
 phase: 1
 title: Image with the app built in
-status: in-progress
+status: impl-reviewed
 branch: feat/14-docker-image-pins-code
 base: 3057bac1dabfe64b7511a7cd52bc6bb5eb45a51b
 delivers: [R1, R2, R3, R4, R5, R6, R7]
 design_review: { status: passed, rounds: 2, last: 2026-11-21 }
-impl_review: { status: changes-requested, rounds: 2, last: 2026-11-21 }
+impl_review: { status: passed, rounds: 2, last: 2026-11-21 }
 approved: 2026-11-21
 ---
 
