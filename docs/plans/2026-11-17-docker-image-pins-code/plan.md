@@ -249,7 +249,7 @@ same step.
 
 | Phase | Title | Status | Tasks |
 | --- | --- | --- | --- |
-| 01 | Image with the app built in | in-progress | 12/14 |
+| 01 | Image with the app built in | impl-reviewed | 13/14 |
 
 ## Decision log
 

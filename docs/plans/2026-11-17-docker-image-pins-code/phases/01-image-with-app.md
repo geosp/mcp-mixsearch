@@ -38,7 +38,7 @@ and the publish workflow proves it starts before pushing it.
 
 - [x] 4.1 Write `.github/scripts/docker_smoke.sh` per notes.md#d5 (R1, R2, R3, R4). Verify: `.github/scripts/docker_smoke.sh mcp-mixsearch:local` exits 0; `docker run -e MCP_AUTH_ENABLED=false -p 3001:3001 mcp-mixsearch:local --port 3001` answers `/health` on 3001 (R4).
 - [x] 4.2 Check that the smoke test fails on a broken image: build one whose `Dockerfile` adds `CMD ["--no-such-flag"]` and run the script on it (R6). Verify: the script exits non-zero and prints the container logs.
-- [ ] 4.3 Rework `docker-publish.yml` per notes.md#d5: concurrency group, `latest` only on the default branch, one build with `load: true`, smoke test, `docker push` of the tested tags on non-PR events only, moving tags only from the tip of `main` (R6, R7, D5, D7). Verify: `actionlint` passes; the workflow passes on the PR without pushing.
+- [x] 4.3 Rework `docker-publish.yml` per notes.md#d5: concurrency group, `latest` only on the default branch, one build with `load: true`, smoke test, `docker push` of the tested tags on non-PR events only, moving tags only from the tip of `main` (R6, R7, D5, D7). Verify: `actionlint` passes; the workflow passes on the PR without pushing.
 
 ### 5. Docs
 

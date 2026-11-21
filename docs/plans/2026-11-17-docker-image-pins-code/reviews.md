@@ -66,7 +66,7 @@ Raw report: docs/reviews/2026-11-17-docker-image-pins-code/raw/impl-review-01-co
 | I4 | Nit | contract | R1 | No automated check of the revision label | fixed: EXPECTED_REVISION check in docker_smoke.sh, set to github.sha by the workflow; fails on a wrong SHA |
 | I5 | Nit | contract | R3 | Test reads `service_version`, not the version the FastMCP app reports | fixed: tests/test_server.py reads serverInfo through an MCP client; fails with the hard-coded version |
 | I6 | Nit | contract | R5 | No automated `docker compose config` check | accepted: compose files have no build logic; rendered by `docker compose config` in tasks 3.1-3.2 |
-| I7 | Nit | contract | R6 | Workflow behaviour not yet observed (task 4.3 open) | open: observed when the PR's docker-publish run passes (task 4.3) |
+| I7 | Nit | contract | R6 | Workflow behaviour not yet observed (task 4.3 open) | fixed: observed in PR #15's docker-publish run 44940811871 (build, smoke test pass; login and push skipped) |
 | I8 | Nit | contract | D7 | A failing `git ls-remote` leaves `tip` empty and silently skips `main`/`latest` | fixed: pipefail, `--exit-code` and an empty-tip failure in the push step |
 | I9 | Nit | contract | D7 | Code uses the repo URL, D7 says `origin` | accepted: the repository URL and `origin` name the same public repository |
 | I10 | Nit | contract | R7 | Semver `1`, `1.2` tags also move on re-runs | accepted: version tags are pushed on every run by design (R7); only `main` and `latest` are moving tags |
@@ -74,7 +74,7 @@ Raw report: docs/reviews/2026-11-17-docker-image-pins-code/raw/impl-review-01-co
 | I12 | Nit | contract | docs | `docker/README.md` uses `:v1.1.0` as a pinned example, which won't start with the new compose | fixed: docker/README.md examples use `:v1.2.0` |
 | I13 | Nit | contract | D3 | CHANGELOG migration example differs in form from D3 | accepted: same meaning; the compose form is clearer in a changelog |
 | I14 | Nit | contract | plan | Phases table shows 0/14 | fixed: Phases table |
-| I15 | Nit | contract | phase | Tasks 4.3 and 6.2 unticked | open: task 4.3 waits for the PR run, task 6.2 for the manual check |
+| I15 | Nit | contract | phase | Tasks 4.3 and 6.2 unticked | open: task 6.2's post-merge label read |
 
 ## 2026-11-21 · impl-review · phase 01 · round 2 · changes-requested
 Diff: 3057bac1dabfe64b7511a7cd52bc6bb5eb45a51b..a3214a7294d607adf5c62e73ae32f9739d1fc078
@@ -93,7 +93,7 @@ Round 1 fixes: none came back. Closed round 1 findings (I6, I9, I10, I13) stay c
 | J7 | Nit | contract | R4 | `--help \| grep -q` can SIGPIPE under pipefail | fixed: `grep >/dev/null` instead of `grep -q` in docker_smoke.sh |
 | J8 | Nit | contract | R4 | `--port 3001` checked inside the container, not through `-p` | accepted: port 3000 is checked through a published port, and `--port 3001` binds the same way; the published path is what `-p` adds |
 | J9 | Nit | contract | R3 | Smoke compares with pyproject.toml, not installed metadata | accepted: equal in a locked build; tests/test_server.py checks against installed metadata |
-| J10 | Nit | contract | R1 | PR `github.sha` vs metadata-action's revision not yet observed | open: observed by the PR's docker-publish run (task 4.3) |
+| J10 | Nit | contract | R1 | PR `github.sha` vs metadata-action's revision not yet observed | fixed: PR #15 run 44940811871: revision label equals github.sha (ad09c7b) |
 | J11 | Nit | contract | R5 | No automated compose check (as I6) | fixed: test_compose_files_run_the_image_as_built |
 | J12 | Nit | contract | R1 | Lazy downloads on the search path aren't run offline | accepted: searching needs the network by design; R1 is about code, which startup alone loads |
-| J13 | Nit | contract | phase | Tasks 4.3 and 6.2 open (as I15) | open: task 4.3 waits for the PR run, task 6.2 for the manual check |
+| J13 | Nit | contract | phase | Tasks 4.3 and 6.2 open (as I15) | open: task 6.2's post-merge label read |
