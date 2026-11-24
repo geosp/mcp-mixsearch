@@ -15,7 +15,7 @@ jobs:
 
       - name: Install uv
         # setup-uv publishes full version tags only (no floating v10)
-        uses: astral-sh/setup-uv@v10.3.3
+        uses: astral-sh/setup-uv@v10.4.0
         with:
           python-version: "3.14"
           enable-cache: true
